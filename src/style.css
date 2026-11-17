@@ -168,3 +168,59 @@ header{position:sticky}
   .head-tools .export-actions{width:auto;justify-content:flex-start}
   .pagehead>.export-actions{margin-left:auto}
 }
+
+
+/* Stabilize dashboard and calendar headers on desktop and mobile */
+.pagehead{
+  min-width:0;
+  flex-wrap:wrap;
+  align-items:flex-start;
+}
+.pagehead>div:first-child{
+  min-width:0;
+  flex:1 1 220px;
+}
+.pagehead>.head-tools{
+  width:auto;
+  max-width:100%;
+  flex:0 1 auto;
+  margin-inline-start:auto;
+}
+.pagehead>.export-actions{
+  flex:0 0 auto;
+  max-width:100%;
+  margin-left:0;
+  margin-right:auto;
+}
+.pagehead .layer-title-group{
+  max-width:100%;
+  min-width:0;
+}
+@media(max-width:650px){
+  .pagehead{
+    align-items:flex-start;
+    row-gap:10px;
+    column-gap:8px;
+  }
+  .pagehead>div:first-child{
+    flex:1 1 100%;
+    width:100%;
+  }
+  .pagehead>.head-tools,
+  .pagehead>.export-actions{
+    flex:0 1 auto;
+    width:auto;
+    margin-left:0;
+    margin-right:auto;
+  }
+  .pagehead .layer-title-group{
+    gap:6px;
+    white-space:nowrap;
+  }
+  .pagehead .layer-title-group h1{
+    font-size:19px!important;
+  }
+  .pagehead .layer-title-group small{
+    font-size:9px;
+  }
+}
