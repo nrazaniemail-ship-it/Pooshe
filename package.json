@@ -20,7 +20,10 @@
     "@capacitor/android": "^7.4.3",
     "@capacitor/core": "^7.4.3",
     "@capacitor/local-notifications": "^7.0.0",
-    "@fontsource-variable/vazirmatn": "^5.3.0"
+    "@fontsource-variable/vazirmatn": "^5.3.0",
+    "@capacitor/app": "^7.0.1",
+    "@capacitor/filesystem": "^7.1.4",
+    "@capacitor/share": "^7.0.2"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.3",
