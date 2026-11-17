@@ -9,5 +9,5 @@ export const TYPES={حقوقی:{"مطالبه وجه و اسناد تجاری":[
  else if(["کلاهبرداری","رایانه‌ای","دسترسی غیرمجاز"].some(x=>type.includes(x)))extra=["حفظ و مستندسازی ادله الکترونیکی و گردش وجوه","درخواست استعلام بانکی، مخابراتی یا کارشناسی دیجیتال حسب مورد"];
  else if(type.includes("سرقت"))extra=["صورت‌برداری اموال و گردآوری مدارک مالکیت","پیگیری کشف، توقیف و استرداد اموال حسب مورد"];
  if(extra.length)base.splice(3,0,...extra);
- return base.map((title,i)=>({id:crypto.randomUUID(),title,order:i+1,status:"pending",startDate:"",dueDate:"",note:"",completedAt:""}))
+ base.push("نتیجه نهایی");return base.map((title,i)=>({id:crypto.randomUUID(),title,order:i+1,status:"pending",startDate:"",dueDate:"",note:"",completedAt:"",...(i===base.length-1?{isFinalResult:true}:{})}))
 }
