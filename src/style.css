@@ -122,3 +122,10 @@ header{position:sticky}
   .head-actions{gap:5px}
   .podcast-audio-slot{margin:10px 0 14px;padding:8px}
 }
+
+/* Keep layer title and lawyer label aligned on one horizontal baseline */
+.layer-title-group{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;white-space:nowrap;min-height:34px}
+.layer-title-group h1{margin:0!important;line-height:1.25!important}
+.layer-title-group .desk-separator{color:var(--muted);font-size:18px;line-height:1}
+.layer-title-group small{font-size:11px;color:var(--accent);line-height:1.4}
+@media(max-width:650px){.layer-title-group{gap:7px}.layer-title-group h1{font-size:20px!important}.layer-title-group small{font-size:10px}}
