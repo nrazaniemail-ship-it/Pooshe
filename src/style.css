@@ -108,3 +108,17 @@ header{position:sticky}
 .persistent-player button{width:30px;height:30px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--accent);font-size:13px}
 .podcast-select{margin-top:8px}
 @media(max-width:650px){.header-date{font-size:10px;max-width:120px;overflow:hidden;text-overflow:ellipsis}.head-actions{gap:7px}.player-toggle{width:34px;height:34px}.persistent-player{left:7px;top:calc(100% + 5px)}}
+
+/* Keep the global audio player on the header's top row; retain native controls in the library */
+.persistent-player{position:static;left:auto;top:auto;transform:none;z-index:auto;max-width:230px;min-width:0;padding:5px 7px;box-shadow:none;flex:0 1 auto}
+.persistent-player .player-title{max-width:115px}
+.head-actions{gap:8px;flex-shrink:0}
+.podcast-audio-slot{margin:14px 0 18px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.podcast-audio-controls{display:block;width:100%;max-width:100%;height:42px}
+@media(max-width:650px){
+  .persistent-player{max-width:150px;padding:4px;gap:4px}
+  .persistent-player .player-title{max-width:62px;font-size:9px}
+  .persistent-player button{width:27px;height:27px}
+  .head-actions{gap:5px}
+  .podcast-audio-slot{margin:10px 0 14px;padding:8px}
+}
