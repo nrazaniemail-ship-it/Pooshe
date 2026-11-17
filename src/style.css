@@ -84,3 +84,10 @@ nav button small{font-size:12px!important;line-height:1.15;font-weight:600!impor
 nav button svg{width:38px;height:38px;max-width:100%;max-height:38px}
 nav button small{font-size:15px!important;line-height:1.25;font-weight:700!important}
 @media(max-width:650px){nav button svg{width:38px;height:38px;max-height:38px}nav button small{font-size:14px!important}}
+
+
+/* Align case export and edit actions to the left edge */
+.head-tools{width:100%;justify-content:flex-start;direction:ltr}
+.head-tools>.primary,.head-tools>.outline,.head-tools .export-actions{direction:rtl}
+.head-tools .export-actions{margin-left:0}
+@media(max-width:650px){.head-tools{justify-content:flex-start}.head-tools .export-actions{width:auto;justify-content:flex-start}.head-tools>.primary{margin-right:0;margin-left:0}}
