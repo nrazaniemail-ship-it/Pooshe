@@ -3,6 +3,9 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+concurrency:
+  group: pooshe-android-apk
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
