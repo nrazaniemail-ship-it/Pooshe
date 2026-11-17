@@ -1,0 +1,1 @@
+import type {CapacitorConfig} from "@capacitor/cli";const config:CapacitorConfig={appId:"ir.pooshe.app",appName:"Pooshe",webDir:"dist",backgroundColor:"#101d31",plugins:{LocalNotifications:{iconColor:"#d6b36b"}}};export default config;
