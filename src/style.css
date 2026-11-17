@@ -412,3 +412,9 @@ header{position:sticky}
 .jalali-day:active{transform:scale(.96)}
 .jalali-picker-foot{display:flex;justify-content:space-between;margin-top:12px}
 .jalali-picker-foot button{font-size:11px}
+
+.pagehead>.head-tools.desk-tools{
+  width:100%;
+  flex:1 1 100%;
+  margin:0;
+}
