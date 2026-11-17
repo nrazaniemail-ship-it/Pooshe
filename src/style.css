@@ -253,3 +253,31 @@ header{position:sticky}
   .persistent-player .player-title{max-width:68px;min-width:36px;font-size:9px;}
   .persistent-player button{flex-basis:26px;width:26px;height:26px;font-size:11px;}
 }
+
+
+/* Right-align case registration actions in archive and calendar layers */
+.pagehead>.head-tools.archive-tools,
+.pagehead>.head-tools.calendar-tools{
+  direction:rtl;
+  display:flex;
+  flex:1 1 100%;
+  width:100%;
+  justify-content:flex-start;
+  margin:0;
+}
+.pagehead>.head-tools.archive-tools>.primary,
+.pagehead>.head-tools.calendar-tools>.primary{
+  margin:0;
+}
+.pagehead>.head-tools.calendar-tools .export-actions{
+  direction:ltr;
+  margin:0;
+}
+@media(max-width:650px){
+  .pagehead>.head-tools.archive-tools,
+  .pagehead>.head-tools.calendar-tools{
+    width:100%;
+    justify-content:flex-start;
+    margin:0;
+  }
+}
