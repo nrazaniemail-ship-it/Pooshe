@@ -97,3 +97,14 @@ nav button small{font-size:15px!important;line-height:1.25;font-weight:700!impor
 .desk-title h1{margin:3px 0}
 .desk-title small{white-space:nowrap}
 @media(max-width:650px){.desk-title{gap:9px}.desk-title h1{font-size:20px!important}}
+
+/* Persistent podcast controls and centered header date */
+header{position:sticky}
+.header-date{position:absolute;left:50%;transform:translateX(-50%);font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap;pointer-events:none}
+.player-toggle{width:37px;height:37px;border:1px solid var(--line);border-radius:11px;background:var(--panel2);color:var(--accent);font-size:19px}
+.persistent-player{position:absolute;left:10px;top:calc(100% + 7px);z-index:12;display:flex;align-items:center;gap:8px;max-width:min(290px,calc(100vw - 24px));padding:8px 10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px #0004}
+.persistent-player.player-hidden{display:none}
+.persistent-player .player-title{font-size:10px;max-width:175px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);flex:1}
+.persistent-player button{width:30px;height:30px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--accent);font-size:13px}
+.podcast-select{margin-top:8px}
+@media(max-width:650px){.header-date{font-size:10px;max-width:120px;overflow:hidden;text-overflow:ellipsis}.head-actions{gap:7px}.player-toggle{width:34px;height:34px}.persistent-player{left:7px;top:calc(100% + 5px)}}
