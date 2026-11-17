@@ -44,3 +44,9 @@ nav button small{font-size:10px}
 .podcast-empty{padding:24px 12px;border:1px dashed var(--line);border-radius:12px;text-align:center;color:var(--muted);font-size:12px;line-height:1.9}
 .autosave-state{font-size:10px;color:var(--green);margin-right:auto}
 @media(max-width:650px){.pagehead h1{font-size:20px!important}.section h2{font-size:15px}.stats b{font-size:22px}.podcast-head{align-items:flex-start;flex-wrap:wrap}.podcast-head>.primary{margin-right:auto}.podcast-section{padding:12px}}
+
+.backup-folder-card{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px;margin:14px 0;border:1px solid var(--line);border-radius:13px;background:var(--panel2)}
+.backup-folder-card>div{min-width:0}.backup-folder-card small,.backup-folder-card b{display:block}.backup-folder-card small{font-size:11px;color:var(--muted)}.backup-folder-card b{font-size:14px;margin:5px 0}.backup-folder-card p{font-size:11px;color:var(--muted);margin:0;line-height:1.8}
+.backup-schedule{padding:14px;margin:12px 0;border:1px solid var(--line);border-radius:13px}.backup-schedule h4{margin:0 0 10px;font-size:14px}
+.backup-schedule .hint{font-size:11px;line-height:1.9}
+@media(max-width:520px){.backup-folder-card{align-items:flex-start;flex-direction:column}.backup-folder-card .outline{width:100%}}
