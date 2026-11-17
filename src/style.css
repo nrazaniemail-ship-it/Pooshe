@@ -4,3 +4,43 @@
 @media print{nav,header,.pagehead button,.head-tools,.link,.outline,.primary,.donebtn,.upload{display:none!important}body{background:white;color:#111}.shell{max-width:none}main{padding:0}.case,.step,.settings section,.list{break-inside:avoid}}
 
 .pagehead h1{font-size:2em!important;line-height:1.35;font-weight:800}.section h2{font-size:1.65em;font-weight:800}.brand b{font-size:1.35em}.head-actions{position:relative}.theme-toggle{position:absolute;left:50%;transform:translateX(-50%);width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--panel2);color:var(--accent);font-size:21px;display:grid;place-items:center}.case-progress{margin:18px 0 22px;padding:15px 17px;border:1px solid var(--line);border-radius:15px;background:var(--panel)}.progress-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.progress-heading>div{display:flex;align-items:center;gap:12px}.progress-heading span{font-weight:700;font-size:14px}.progress-heading strong{font-size:22px;color:var(--accent)}.progress-heading small{color:var(--muted)}.progress-large{height:12px;border-radius:20px;overflow:hidden;background:var(--panel2)}.progress-large i{display:block;height:100%;border-radius:20px;background:linear-gradient(90deg,var(--accent),var(--green));transition:width .25s}.step-note,.step-event{padding:10px 12px;margin:9px 0;border-radius:10px;background:var(--panel2);border:1px solid var(--line)}.step-note>b,.step-event>b{font-size:11px;color:var(--accent)}.step-note p,.step-event p{margin:5px 0 0;white-space:pre-wrap;line-height:1.8}.security-panel{padding:18px!important}.security-head{display:flex;align-items:center;gap:12px;margin-bottom:18px}.security-head h3{margin:0 0 4px!important;font-size:17px}.security-head p{margin:0;color:var(--muted);font-size:11px}.security-mark{width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:var(--soft);color:var(--accent);font-size:22px}.security-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.security-action{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:15px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);color:var(--text);text-align:right;cursor:pointer}.security-action>span{font-size:22px;color:var(--accent)}.security-action>b{font-size:13px}.security-action small{font-size:10px;color:var(--muted)}.restore-action{position:relative}.security-info{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.security-info>div{padding:10px;border-radius:10px;background:var(--panel2)}.security-info small,.security-info b{display:block}.security-info small{font-size:10px;color:var(--muted);margin-bottom:5px}.security-info b{font-size:11px}.security-warning{padding:12px;border-radius:11px;background:var(--yellowbg);color:var(--text)}.security-warning b{font-size:12px}.security-warning p,.support-links p{font-size:11px;line-height:1.9;margin:5px 0}.support-links{margin-top:15px;padding-top:13px;border-top:1px solid var(--line)}.support-links>a{color:var(--accent);font-size:12px;text-decoration:none}@media(max-width:600px){.pagehead h1{font-size:2em!important}.security-actions{grid-template-columns:1fr 1fr}.security-info{grid-template-columns:1fr}.progress-heading small{font-size:10px}.theme-toggle{width:38px;height:38px}}
+
+/* Typography and library audio controls */
+:root{font-family:"Vazirmatn Variable",Vazirmatn,sans-serif}
+body{font-size:14px}
+header .brand b{font-size:18px}
+.pagehead h1{font-size:22px!important;font-weight:750;line-height:1.45}
+.pagehead p{font-size:12px}.pagehead small{font-size:11px}
+.section h2{font-size:16px}
+.case h3,.book h3{font-size:14px}
+.case p,.book p{font-size:11px}
+.stats small{font-size:11px}.stats b{font-size:24px}
+.primary,.outline,.danger,.donebtn{font-size:12px}
+.field{font-size:12px}.field input,.field select,.field textarea{font-size:14px}
+.setting{font-size:12px}.setting select{font-size:12px}
+.list>div,.list>a{font-size:12px}.list small{font-size:11px}
+nav button small{font-size:10px}
+.stepbody b{font-size:13px}.stepbody small,.stepbody p{font-size:11px}
+.foot{font-size:10px}
+.case-delete{width:30px;height:30px;display:grid;place-items:center;border:1px solid var(--line);border-radius:9px;background:transparent;color:#d77c82;padding:5px;z-index:2}
+.case-delete svg{width:16px;height:16px}.case-delete:hover{background:#81343c;color:#fff}
+.podcast-section{margin-top:25px;padding:16px;background:var(--panel);border:1px solid var(--line);border-radius:16px}
+.podcast-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.podcast-head>div{display:flex;align-items:center;gap:11px}
+.podcast-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:var(--soft);color:var(--accent)}
+.podcast-icon svg{width:22px;height:22px}
+.podcast-head h2{font-size:16px;margin:0 0 4px}
+.podcast-head p{font-size:11px;color:var(--muted);margin:0}
+.podcast-list{display:grid;gap:10px}
+.podcast-card{padding:13px;border:1px solid var(--line);border-radius:13px;background:var(--panel2)}
+.podcast-card-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.podcast-card-head>div{flex:1;min-width:0}
+.podcast-card-head b,.podcast-card-head small{display:block}
+.podcast-card-head b{font-size:13px}
+.podcast-card-head small{font-size:10px;color:var(--muted);margin-top:4px}
+.podcast-play{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--soft);color:var(--accent)}
+.podcast-play svg{width:19px;height:19px}
+.podcast-card audio{width:100%;height:38px}
+.podcast-empty{padding:24px 12px;border:1px dashed var(--line);border-radius:12px;text-align:center;color:var(--muted);font-size:12px;line-height:1.9}
+.autosave-state{font-size:10px;color:var(--green);margin-right:auto}
+@media(max-width:650px){.pagehead h1{font-size:20px!important}.section h2{font-size:15px}.stats b{font-size:22px}.podcast-head{align-items:flex-start;flex-wrap:wrap}.podcast-head>.primary{margin-right:auto}.podcast-section{padding:12px}}
