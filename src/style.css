@@ -50,3 +50,21 @@ nav button small{font-size:10px}
 .backup-schedule{padding:14px;margin:12px 0;border:1px solid var(--line);border-radius:13px}.backup-schedule h4{margin:0 0 10px;font-size:14px}
 .backup-schedule .hint{font-size:11px;line-height:1.9}
 @media(max-width:520px){.backup-folder-card{align-items:flex-start;flex-direction:column}.backup-folder-card .outline{width:100%}}
+
+/* Requested navigation scale and Android safe-area spacing */
+.shell{padding-top:env(safe-area-inset-top,0px)}
+header{top:env(safe-area-inset-top,0px)}
+nav{height:112px;padding-top:8px;padding-bottom:max(8px,env(safe-area-inset-bottom,0px))}
+nav button{gap:5px;min-width:0}
+nav button svg{width:76px;height:76px;max-width:100%;max-height:76px}
+nav button.active svg{padding:0;background:transparent}
+nav button small{font-size:20px;line-height:1.2;font-weight:700}
+@media(max-width:650px){
+  .shell{padding-top:calc(env(safe-area-inset-top,0px) + 8px)}
+  header{height:64px}
+  nav{height:112px;padding-left:4px;padding-right:4px}
+  nav button{flex:1}
+  nav button svg{width:76px;height:76px}
+  nav button small{font-size:20px}
+  main{padding-top:20px}
+}
