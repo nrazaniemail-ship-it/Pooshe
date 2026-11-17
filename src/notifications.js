@@ -13,6 +13,7 @@ export async function scheduleCaseReminders(cases,settings){
   for(const c of cases)for(const s of c.steps||[]){
    if(s.status==="done")continue;
    for(const ev of eventDates(s)){
+    if(ev.kind==="eventDate"&&s.eventReminderEnabled===false)continue;
     const at=new Date(ev.date+"T"+(settings.reminderTime||"09:00")+":00");
     at.setMinutes(at.getMinutes()-Number(settings.reminderMinutes||0));
     if(at>Date.now())list.push({id:hash(c.id+s.id+ev.kind),title:"یادآوری پرونده: "+c.title,body:ev.label+": "+s.title+" | تاریخ: "+ev.date,schedule:{at},extra:{caseId:c.id,stepId:s.id,event:ev.kind}});
@@ -31,6 +32,7 @@ export function checkWebReminders(cases,settings){
  for(const c of cases)for(const s of c.steps||[]){
   if(s.status==="done")continue;
   for(const ev of eventDates(s)){
+   if(ev.kind==="eventDate"&&s.eventReminderEnabled===false)continue;
    const at=new Date(ev.date+"T"+(settings.reminderTime||"09:00")+":00");
    at.setMinutes(at.getMinutes()-Number(settings.reminderMinutes||0));
    const key="pooshe-web-"+c.id+"-"+s.id+"-"+ev.kind+"-"+ev.date;
