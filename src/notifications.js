@@ -1,7 +1,7 @@
 import {Capacitor} from "@capacitor/core";
 import {LocalNotifications} from "@capacitor/local-notifications";
 const hash=s=>{let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return Math.abs(h)||1};
-const eventDates=s=>[["شروع گام","startDate"],["موعد پایان گام","dueDate"]].filter(x=>s[x[1]]).map(x=>({label:x[0],date:s[x[1]],kind:x[1]}));
+const eventDates=s=>[["شروع گام","startDate"],["موعد پایان گام","dueDate"],["قرار پرونده","eventDate"]].filter(x=>s[x[1]]).map(x=>({label:x[0],date:s[x[1]],kind:x[1]}));
 export async function scheduleCaseReminders(cases,settings){
  if(!Capacitor.isNativePlatform())return;
  try{
