@@ -481,3 +481,44 @@ header{position:sticky}
  .podcast-art{width:62px;height:62px;flex-basis:62px}
  .podcast-now-meta b{font-size:12px}
 }
+
+
+/* Calendar action buttons: compact and guaranteed to fit on mobile */
+@media(max-width:650px){
+  .pagehead>.head-tools.calendar-tools{
+    width:100%;max-width:100%;overflow:visible;gap:5px;
+    flex-wrap:nowrap;justify-content:flex-start;
+  }
+  .calendar-tools>#new,
+  .calendar-tools>.export-actions .outline{
+    width:88px;min-width:88px;height:34px;
+    padding:0 4px;font-size:10px;line-height:1.1;
+  }
+  .calendar-tools>.export-actions{gap:5px;min-width:0}
+}
+
+/* One standard audio widget is hosted inside the card of the selected file */
+.namello-podcast .podcast-card-player{
+  min-width:0;margin:8px 0 10px;padding:8px 10px;
+  border:1px solid #31515b;border-radius:11px;background:#0b1a27;
+}
+.namello-podcast .podcast-audio-controls{
+  display:block;width:100%;max-width:100%;height:42px;
+  accent-color:#d7b66f;
+}
+.namello-podcast .podcast-track-controls{
+  display:flex;align-items:center;justify-content:space-between;gap:7px;
+}
+.namello-podcast .podcast-track-controls button{
+  flex:1;min-width:0;padding:8px 5px;font-size:10px;
+}
+.namello-podcast .podcast-track-controls button:disabled{
+  opacity:.32;cursor:not-allowed;
+}
+.namello-podcast .podcast-track-controls .primary{
+  background:#d6b66f;color:#142331;border-color:#d6b66f;
+}
+@media(max-width:420px){
+  .namello-podcast .podcast-track-controls{gap:4px}
+  .namello-podcast .podcast-track-controls button{font-size:9px;padding:8px 2px}
+}
