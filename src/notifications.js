@@ -1,6 +1,7 @@
 import {Capacitor} from "@capacitor/core";
 import {LocalNotifications} from "@capacitor/local-notifications";
 const hash=s=>{let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return Math.abs(h)||1};
+const eventDates=s=>[["شروع گام","startDate"],["موعد پایان گام","dueDate"]].filter(x=>s[x[1]]).map(x=>({label:x[0],date:s[x[1]],kind:x[1]}));
 export async function scheduleCaseReminders(cases,settings){
  if(!settings.notify||!Capacitor.isNativePlatform())return;
  try{
@@ -9,10 +10,12 @@ export async function scheduleCaseReminders(cases,settings){
   if(pending.length)await LocalNotifications.cancel({notifications:pending.map(n=>({id:n.id}))});
   const list=[];
   for(const c of cases)for(const s of c.steps||[]){
-   if(!s.dueDate||s.status==="done")continue;
-   const at=new Date(s.dueDate+"T"+(settings.reminderTime||"09:00")+":00");
-   at.setMinutes(at.getMinutes()-Number(settings.reminderMinutes||0));
-   if(at>Date.now())list.push({id:hash(c.id+s.id),title:"یادآوری پرونده: "+c.title,body:s.title+" | موعد: "+s.dueDate,schedule:{at},extra:{caseId:c.id,stepId:s.id}});
+   if(s.status==="done")continue;
+   for(const ev of eventDates(s)){
+    const at=new Date(ev.date+"T"+(settings.reminderTime||"09:00")+":00");
+    at.setMinutes(at.getMinutes()-Number(settings.reminderMinutes||0));
+    if(at>Date.now())list.push({id:hash(c.id+s.id+ev.kind),title:"یادآوری پرونده: "+c.title,body:ev.label+": "+s.title+" | تاریخ: "+ev.date,schedule:{at},extra:{caseId:c.id,stepId:s.id,event:ev.kind}});
+   }
   }
   if(list.length)await LocalNotifications.schedule({notifications:list.slice(0,60)});
  }catch(e){console.warn("زمان‌بندی اعلان بومی انجام نشد",e)}
@@ -25,13 +28,15 @@ export function checkWebReminders(cases,settings){
  if(!settings.notify||!("Notification"in window)||Notification.permission!=="granted")return;
  const now=new Date();
  for(const c of cases)for(const s of c.steps||[]){
-  if(!s.dueDate||s.status==="done")continue;
-  const at=new Date(s.dueDate+"T"+(settings.reminderTime||"09:00")+":00");
-  at.setMinutes(at.getMinutes()-Number(settings.reminderMinutes||0));
-  const key="pooshe-web-"+c.id+"-"+s.id+"-"+s.dueDate;
-  if(now>=at&&now<new Date(at.getTime()+86400000)&&!sessionStorage.getItem(key)){
-   new Notification("یادآوری پرونده: "+c.title,{body:s.title+" | موعد: "+s.dueDate});
-   sessionStorage.setItem(key,"1");
+  if(s.status==="done")continue;
+  for(const ev of eventDates(s)){
+   const at=new Date(ev.date+"T"+(settings.reminderTime||"09:00")+":00");
+   at.setMinutes(at.getMinutes()-Number(settings.reminderMinutes||0));
+   const key="pooshe-web-"+c.id+"-"+s.id+"-"+ev.kind+"-"+ev.date;
+   if(now>=at&&now<new Date(at.getTime()+86400000)&&!sessionStorage.getItem(key)){
+    new Notification("یادآوری پرونده: "+c.title,{body:ev.label+": "+s.title+" | تاریخ: "+ev.date});
+    sessionStorage.setItem(key,"1");
+   }
   }
  }
 }
