@@ -242,3 +242,14 @@ header{position:sticky}
   .header-date span{font-size:10px}
   .header-date small{font-size:9px}
 }
+
+/* Podcast previous/next controls */
+.persistent-player{max-width:min(360px,calc(100vw - 24px));gap:6px;}
+.persistent-player .player-title{max-width:145px;min-width:48px;}
+.persistent-player button{flex:0 0 30px;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;}
+.persistent-player button:disabled{opacity:.35;cursor:not-allowed;}
+@media(max-width:650px){
+  .persistent-player{max-width:min(235px,calc(100vw - 16px));gap:3px;padding:4px;}
+  .persistent-player .player-title{max-width:68px;min-width:36px;font-size:9px;}
+  .persistent-player button{flex-basis:26px;width:26px;height:26px;font-size:11px;}
+}
