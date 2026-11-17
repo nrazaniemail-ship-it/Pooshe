@@ -319,3 +319,57 @@ header{position:sticky}
   }
   .archive-tools>.export-actions{gap:6px}
 }
+
+
+/* Unified dashboard and calendar action buttons */
+.desk-tools,.calendar-tools{
+  direction:rtl;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  flex-wrap:nowrap;
+  gap:8px;
+}
+.desk-tools>#new,.calendar-tools>#new,
+.desk-tools>.export-actions .outline,
+.calendar-tools>.export-actions .outline{
+  box-sizing:border-box;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:124px;
+  min-width:124px;
+  height:38px;
+  margin:0;
+  padding:0 10px;
+  white-space:nowrap;
+  text-align:center;
+}
+.desk-tools>.export-actions,.calendar-tools>.export-actions{
+  display:flex;
+  flex:0 0 auto;
+  align-items:center;
+  gap:8px;
+  width:auto;
+  max-width:none;
+  margin:0;
+}
+.jalali-date{
+  direction:ltr;
+  text-align:center;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:.3px;
+}
+.date-hint{font-size:10px;color:var(--muted);font-weight:500}
+@media(max-width:650px){
+  .desk-tools,.calendar-tools{gap:6px;flex-wrap:nowrap;width:100%;overflow-x:auto}
+  .desk-tools>#new,.calendar-tools>#new,
+  .desk-tools>.export-actions .outline,
+  .calendar-tools>.export-actions .outline{
+    width:116px;
+    min-width:116px;
+    height:36px;
+    padding:0 7px;
+  }
+  .desk-tools>.export-actions,.calendar-tools>.export-actions{gap:6px}
+}
