@@ -281,3 +281,41 @@ header{position:sticky}
     margin:0;
   }
 }
+
+
+/* Equal button dimensions for archive registration and report exports */
+.archive-tools{
+  align-items:center;
+  gap:8px;
+}
+.archive-tools>#new,
+.archive-tools>.export-actions .outline{
+  box-sizing:border-box;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:124px;
+  min-width:124px;
+  height:38px;
+  padding:0 10px;
+  margin:0;
+  white-space:nowrap;
+  text-align:center;
+}
+.archive-tools>.export-actions{
+  width:auto;
+  max-width:none;
+  margin:0;
+  gap:8px;
+  direction:ltr;
+}
+@media(max-width:650px){
+  .archive-tools>#new,
+  .archive-tools>.export-actions .outline{
+    width:116px;
+    min-width:116px;
+    height:36px;
+    padding:0 7px;
+  }
+  .archive-tools>.export-actions{gap:6px}
+}
