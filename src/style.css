@@ -91,3 +91,9 @@ nav button small{font-size:15px!important;line-height:1.25;font-weight:700!impor
 .head-tools>.primary,.head-tools>.outline,.head-tools .export-actions{direction:rtl}
 .head-tools .export-actions{margin-left:0}
 @media(max-width:650px){.head-tools{justify-content:flex-start}.head-tools .export-actions{width:auto;justify-content:flex-start}.head-tools>.primary{margin-right:0;margin-left:0}}
+
+/* Keep the lawyer label to the left of the desk title */
+.desk-title{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.desk-title h1{margin:3px 0}
+.desk-title small{white-space:nowrap}
+@media(max-width:650px){.desk-title{gap:9px}.desk-title h1{font-size:20px!important}}
