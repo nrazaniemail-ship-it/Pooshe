@@ -418,3 +418,66 @@ header{position:sticky}
   flex:1 1 100%;
   margin:0;
 }
+
+
+/* Dashboard actions compact enough to stay inside the viewport */
+@media(max-width:650px){
+  .pagehead>.head-tools.desk-tools{width:100%;max-width:100%;overflow:visible;gap:5px;justify-content:flex-start}
+  .desk-tools>#new,.desk-tools>.export-actions .outline{
+    width:88px;min-width:88px;height:34px;padding:0 4px;
+    font-size:10px;line-height:1.1;white-space:nowrap;
+  }
+  .desk-tools>.export-actions{gap:5px;min-width:0}
+  .desk-tools>.export-actions .outline{font-size:10px}
+}
+@media(min-width:651px){
+  .desk-tools>#new,.desk-tools>.export-actions .outline{width:108px;min-width:108px;height:36px}
+}
+
+/* PDF preview stays inside Pooshe history so Android Back returns to the app */
+.report-preview-backdrop{position:fixed;inset:0;z-index:20000;display:flex;align-items:center;justify-content:center;padding:10px;background:#07131fe8}
+.report-preview{width:min(1100px,100%);height:min(94dvh,1000px);display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid var(--line);border-radius:15px;background:var(--panel);box-shadow:0 18px 60px #0008}
+.report-preview-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.report-preview-toolbar b{font-size:13px}
+.report-preview-toolbar>div{display:flex;gap:7px}
+.report-preview-toolbar button,.export-fallback button,.export-fallback a{border:1px solid var(--line);border-radius:9px;padding:9px 13px;background:var(--panel2);color:var(--text);font:inherit;font-size:11px;text-decoration:none}
+.report-preview-toolbar button:first-child{background:var(--accent);color:#13202b;border-color:transparent;font-weight:800}
+.report-preview iframe{width:100%;flex:1;min-height:0;border:0;border-radius:9px;background:#fff}
+.export-fallback{width:min(420px,94vw);padding:22px;border-radius:15px;background:var(--panel);color:var(--text);display:flex;flex-direction:column;gap:12px}
+.export-fallback p{font-size:12px;line-height:1.9;color:var(--muted)}
+.export-fallback a{background:var(--accent);color:#142331;text-align:center;font-weight:800}
+
+/* Namello-inspired legal audio surface: deep navy, teal and warm gold */
+.namello-podcast{position:relative;overflow:hidden;margin-top:25px;padding:18px;border:1px solid #24434d;border-radius:19px;background:radial-gradient(ellipse at 95% 0%,#17404b 0%,transparent 42%),linear-gradient(145deg,#0b1928 0%,#102538 55%,#142c3a 100%);color:#eef5f5;box-shadow:0 12px 32px #06111d55}
+.namello-podcast .podcast-head{position:relative;z-index:1}
+.namello-podcast .podcast-head h2{color:#f4f0e7;font-size:17px}
+.namello-podcast .podcast-head p{color:#a9c0c5}
+.namello-podcast .podcast-icon{background:#1a3d49;color:#d7b66f;border:1px solid #345762}
+.namello-podcast .podcast-head>.primary{background:#d6b66f;color:#142331;border:0;font-weight:800}
+.podcast-now-playing{display:flex;align-items:center;gap:15px;margin:17px 0 12px;padding:15px;border:1px solid #31515b;border-radius:15px;background:linear-gradient(120deg,#142f40,#183b46)}
+.podcast-art{width:76px;height:76px;flex:0 0 76px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:13px;background:linear-gradient(145deg,#d7b66f,#94743d);color:#132635;box-shadow:0 7px 18px #0004}
+.podcast-art span{font-size:8px;letter-spacing:2px;font-weight:900}
+.podcast-art b{font-size:30px;line-height:1}
+.podcast-now-meta{display:flex;flex-direction:column;gap:6px;min-width:0}
+.podcast-now-meta small{font-size:9px;letter-spacing:1.2px;color:#74c6bb;font-weight:800}
+.podcast-now-meta b{font-size:14px;color:#fff;overflow-wrap:anywhere}
+.podcast-now-meta span{font-size:10px;color:#b0c5c8}
+.namello-podcast .podcast-audio-slot{margin:12px 0 16px;padding:11px 12px;border:1px solid #31515b;border-radius:12px;background:#0b1a27}
+.namello-podcast .podcast-audio-controls{filter:sepia(.18) saturate(.8);accent-color:#d7b66f}
+.namello-podcast .podcast-list{gap:8px}
+.namello-podcast .podcast-card{padding:11px 12px;border:1px solid #2b4b55;border-radius:12px;background:#102a38}
+.namello-podcast .podcast-card-head{margin-bottom:8px}
+.namello-podcast .podcast-card-head b{color:#f1f5f3}
+.namello-podcast .podcast-card-head small{color:#9db5bb}
+.namello-podcast .podcast-number{width:36px;height:36px;flex:0 0 36px;border:1px solid #3b6067;border-radius:10px;background:#173d48;color:#d9b96f;font-size:12px;font-weight:900}
+.namello-podcast .podcast-select{border-color:#47716f;color:#8bd2c5;background:#143744}
+.namello-podcast .podcast-card .link{color:#e2a4a4}
+.namello-podcast .podcast-empty{border-color:#35515c;color:#b1c5c8}
+@media(max-width:650px){
+ .namello-podcast{padding:12px;border-radius:15px}
+ .namello-podcast .podcast-head{gap:10px}
+ .namello-podcast .podcast-head>.primary{font-size:10px;padding:9px 11px}
+ .podcast-now-playing{padding:11px;gap:11px}
+ .podcast-art{width:62px;height:62px;flex-basis:62px}
+ .podcast-now-meta b{font-size:12px}
+}
