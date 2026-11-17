@@ -522,3 +522,30 @@ header{position:sticky}
   .namello-podcast .podcast-track-controls{gap:4px}
   .namello-podcast .podcast-track-controls button{font-size:9px;padding:8px 2px}
 }
+
+/* Keep podcast content and buttons inside the viewport */
+.namello-podcast{width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-inline:0}
+.namello-podcast *{min-width:0}
+.namello-podcast .podcast-track-controls{width:100%;max-width:100%;overflow:hidden}
+.namello-podcast .podcast-track-controls button{flex:1 1 0;min-width:0;padding-inline:3px}
+.namello-podcast .podcast-card{width:100%;max-width:100%;min-width:0;overflow:hidden}
+.namello-podcast .podcast-card-head>div{min-width:0;overflow-wrap:anywhere}
+.calendar-item{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.calendar-item-info{flex:1 1 auto;min-width:0}
+.calendar-item-info b,.calendar-item-info small{display:block;overflow-wrap:anywhere}
+.calendar-reminder-actions{display:flex;align-items:center;gap:7px;flex:0 0 auto}
+.calendar-reminder-actions button{font-size:10px;padding:7px 9px}
+@media(max-width:650px){
+ .namello-podcast{margin-left:0;margin-right:0;padding:10px}
+ .namello-podcast .podcast-track-controls{gap:5px}
+ .calendar-item{align-items:flex-start;flex-direction:column;gap:8px}
+ .calendar-reminder-actions{width:100%;justify-content:flex-start}
+ .calendar-reminder-actions button{min-height:32px}
+ .pagehead>.head-tools.desk-tools,.pagehead>.head-tools.calendar-tools{width:100%;max-width:100%;min-width:0;overflow:hidden;gap:5px}
+ .desk-tools>#new,.calendar-tools>#new,
+ .desk-tools>.export-actions,.calendar-tools>.export-actions{flex:1 1 0;min-width:0;width:auto}
+ .desk-tools>.export-actions .outline,.calendar-tools>.export-actions .outline,
+ .desk-tools>#new,.calendar-tools>#new{width:100%;min-width:0;max-width:100%;height:36px;padding:0 3px;font-size:10px}
+ .desk-tools>.export-actions,.calendar-tools>.export-actions{gap:5px}
+ .desk-tools>.export-actions .outline,.calendar-tools>.export-actions .outline{flex:1 1 0}
+}
