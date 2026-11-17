@@ -3,11 +3,12 @@ import {LocalNotifications} from "@capacitor/local-notifications";
 const hash=s=>{let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return Math.abs(h)||1};
 const eventDates=s=>[["شروع گام","startDate"],["موعد پایان گام","dueDate"]].filter(x=>s[x[1]]).map(x=>({label:x[0],date:s[x[1]],kind:x[1]}));
 export async function scheduleCaseReminders(cases,settings){
- if(!settings.notify||!Capacitor.isNativePlatform())return;
+ if(!Capacitor.isNativePlatform())return;
  try{
-  const p=await LocalNotifications.checkPermissions();if(p.display!=="granted")return;
   const pending=(await LocalNotifications.getPending()).notifications;
   if(pending.length)await LocalNotifications.cancel({notifications:pending.map(n=>({id:n.id}))});
+  if(!settings.notify)return;
+  const p=await LocalNotifications.checkPermissions();if(p.display!=="granted")return;
   const list=[];
   for(const c of cases)for(const s of c.steps||[]){
    if(s.status==="done")continue;
