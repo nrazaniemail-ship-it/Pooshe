@@ -10,8 +10,12 @@ const plugin=fs.readFileSync("native/android/BackupFolderPlugin.java.tpl","utf8"
 fs.writeFileSync(pluginPath,plugin);
 let updated=source;
 if(!updated.includes("BackupFolderPlugin.class")){
-  if(!updated.includes("import com.getcapacitor.BridgeActivity;"))updated=updated.replace(/package [\w.]+;\s*/,m=>m+"\nimport com.getcapacitor.BridgeActivity;\n");
-  updated=updated.replace(/public void onCreate\(Bundle savedInstanceState\)\s*\{/,"public void onCreate(Bundle savedInstanceState) {\n        registerPlugin(BackupFolderPlugin.class);");
+  if(!updated.includes("import com.getcapacitor.BridgeActivity;"))updated=updated.replace(/package [\w.]+;\s*/,m=>m+"\nimport com.getcapacitor.BridgeActivity;\nimport android.os.Bundle;\n");
+  if(/public void onCreate\(Bundle savedInstanceState\)\s*\{/.test(updated)){
+    updated=updated.replace(/public void onCreate\(Bundle savedInstanceState\)\s*\{/,"public void onCreate(Bundle savedInstanceState) {\n        registerPlugin(BackupFolderPlugin.class);");
+  } else {
+    updated=updated.replace(/}\s*$/, "\n    @Override\n    public void onCreate(Bundle savedInstanceState) {\n        registerPlugin(BackupFolderPlugin.class);\n        super.onCreate(savedInstanceState);\n    }\n}\n");
+  }
   fs.writeFileSync(main,updated);
 }
 console.log("Configured persistent SAF backup folder picker for "+pkg);
