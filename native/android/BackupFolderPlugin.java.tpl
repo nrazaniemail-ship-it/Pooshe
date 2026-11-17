@@ -10,7 +10,8 @@ import java.nio.charset.StandardCharsets;
 import com.getcapacitor.*;
 import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
-import com.getcapacitor.annotation.PluginMethod;
+import com.getcapacitor.PluginMethod;
+import androidx.activity.result.ActivityResult;
 
 @CapacitorPlugin(name = "BackupFolder")
 public class BackupFolderPlugin extends Plugin {
