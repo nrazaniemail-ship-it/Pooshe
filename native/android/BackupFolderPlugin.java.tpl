@@ -9,6 +9,7 @@ import android.os.Looper;
 import android.provider.MediaStore;
 import android.print.PrintAttributes;
 import android.print.PrintDocumentAdapter;
+import android.print.PrintManager;
 import android.print.PrintDocumentInfo;
 import android.print.PageRange;
 import android.os.CancellationSignal;
