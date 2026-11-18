@@ -137,6 +137,67 @@ public class BackupFolderPlugin extends Plugin {
         }
     }
 
+    private void renderPdf(PluginCall call, WebView view, FrameLayout decor,
+                           String fileName, int widthPx, int pageHeightPx, int dpi,
+                           String measuredHeight) {
+        PdfDocument document = new PdfDocument();
+        try {
+            double cssHeight;
+            try {
+                cssHeight = Double.parseDouble(measuredHeight == null ? "0" : measuredHeight.replace("\"", ""));
+            } catch (NumberFormatException ignored) {
+                cssHeight = 0;
+            }
+            if (cssHeight <= 0) throw new IllegalStateException("ارتفاع محتوای صفحه وب قابل تشخیص نیست");
+
+            int contentHeightPx = Math.max((int)Math.ceil(cssHeight * view.getScale()), pageHeightPx);
+            view.measure(
+                View.MeasureSpec.makeMeasureSpec(widthPx, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(contentHeightPx, View.MeasureSpec.EXACTLY)
+            );
+            view.layout(0, 0, widthPx, contentHeightPx);
+            int pageCount = Math.max(1, (int)Math.ceil(contentHeightPx / (double)pageHeightPx));
+            if (pageCount > 100) throw new IllegalStateException("تعداد صفحات PDF بیش از حد مجاز است");
+
+            float scale = 72f / dpi;
+            view.setAlpha(1f);
+            for (int pageIndex = 0; pageIndex < pageCount; pageIndex++) {
+                PdfDocument.PageInfo info = new PdfDocument.PageInfo.Builder(595, 842, pageIndex + 1).create();
+                PdfDocument.Page page = document.startPage(info);
+                page.getCanvas().drawColor(Color.WHITE);
+                page.getCanvas().save();
+                page.getCanvas().scale(scale, scale);
+                page.getCanvas().translate(0, -pageIndex * pageHeightPx);
+                view.draw(page.getCanvas());
+                page.getCanvas().restore();
+                document.finishPage(page);
+            }
+
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            document.writeTo(output);
+            byte[] pdfBytes = output.toByteArray();
+            if (pdfBytes.length < 500) throw new IllegalStateException("فایل PDF خروجی خالی یا ناقص است");
+            saveBytes(fileName, "application/pdf", pdfBytes);
+
+            JSObject result = new JSObject();
+            result.put("saved", true);
+            result.put("fileName", fileName);
+            result.put("folder", "Download/pooshe backups");
+            result.put("format", "A4 portrait");
+            result.put("pages", pageCount);
+            result.put("bytes", pdfBytes.length);
+            call.resolve(result);
+        } catch (Exception e) {
+            android.util.Log.e("Pooshe", "PDF render/save failed", e);
+            call.reject("تولید یا ذخیره PDF ناموفق بود: " + e.getMessage(), e);
+        } finally {
+            document.close();
+            view.setAlpha(0f);
+            decor.removeView(view);
+            view.destroy();
+        }
+    }
+
     @PluginMethod
     public void savePdf(PluginCall call) {
         String html = call.getString("html");
@@ -161,10 +222,8 @@ public class BackupFolderPlugin extends Plugin {
 
             final FrameLayout decor = (FrameLayout) getActivity().getWindow().getDecorView();
             final int dpi = 150;
-            final int pageWidthPt = 595;
-            final int pageHeightPt = 842;
-            final int widthPx = Math.round(pageWidthPt * dpi / 72f);
-            final int pageHeightPx = Math.round(pageHeightPt * dpi / 72f);
+            final int widthPx = Math.round(595 * dpi / 72f);
+            final int pageHeightPx = Math.round(842 * dpi / 72f);
             FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(widthPx, pageHeightPx);
             decor.addView(webView, layoutParams);
             webView.setAlpha(0f);
@@ -174,51 +233,13 @@ public class BackupFolderPlugin extends Plugin {
                     view.evaluateJavascript(
                         "(function(){return Math.max(document.documentElement.scrollHeight,document.body?document.body.scrollHeight:0);})()",
                         value -> {
-                            PdfDocument document = new PdfDocument();
-                            try {
-                                double cssHeight = Double.parseDouble(value.replace("\"", ""));
-                                int contentHeightPx = Math.max(
-                                    (int)Math.ceil(cssHeight * view.getScale()), pageHeightPx
-                                );
-                                view.measure(
-                                    View.MeasureSpec.makeMeasureSpec(widthPx, View.MeasureSpec.EXACTLY),
-                                    View.MeasureSpec.makeMeasureSpec(contentHeightPx, View.MeasureSpec.EXACTLY)
-                                );
-                                view.layout(0, 0, widthPx, contentHeightPx);
-                                int pageCount = Math.max(1, (int)Math.ceil(contentHeightPx / (double)pageHeightPx));
-                                if (pageCount > 100) throw new IllegalStateException("تعداد صفحات PDF بیش از حد مجاز است");
-                                float scale = 72f / dpi;
-                                view.setAlpha(1f);
-                                for (int pageIndex = 0; pageIndex < pageCount; pageIndex++) {
-                                    PdfDocument.PageInfo info = new PdfDocument.PageInfo.Builder(
-                                        pageWidthPt, pageHeightPt, pageIndex + 1
-                                    ).create();
-                                    PdfDocument.Page page = document.startPage(info);
-                                    page.getCanvas().drawColor(Color.WHITE);
-                                    page.getCanvas().save();
-                                    page.getCanvas().scale(scale, scale);
-                                    page.getCanvas().translate(0, -pageIndex * pageHeightPx);
-                                    view.draw(page.getCanvas());
-                                    page.getCanvas().restore();
-                                    document.finishPage(page);
-                                }
-                                ByteArrayOutputStream output = new ByteArrayOutputStream();
-                                view.setAlpha(0f);
-                                document.writeTo(output);
-                                saveBytes(fileName, "application/pdf", output.toByteArray());
-                                JSObject result = new JSObject();
-                                result.put("saved", true);
-                                result.put("fileName", fileName);
-                                result.put("folder", "Download/pooshe backups");
-                                result.put("format", "A4 portrait");
-                                result.put("pages", pageCount);
-                                call.resolve(result);
-                            } catch (Exception e) {
-                                call.reject("تولید یا ذخیره PDF ناموفق بود: " + e.getMessage(), e);
-                            } finally {
-                                document.close();
-                                decor.removeView(view);
-                                view.destroy();
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                view.postVisualStateCallback(System.nanoTime(),
+                                    requestId -> view.post(() -> renderPdf(call, view, decor,
+                                        fileName, widthPx, pageHeightPx, dpi, value)));
+                            } else {
+                                view.post(() -> renderPdf(call, view, decor,
+                                    fileName, widthPx, pageHeightPx, dpi, value));
                             }
                         }
                     );
@@ -226,6 +247,7 @@ public class BackupFolderPlugin extends Plugin {
             });
             webView.loadDataWithBaseURL("https://localhost/", printableHtml, "text/html", "UTF-8", null);
         } catch (Exception e) {
+            android.util.Log.e("Pooshe", "PDF preparation failed", e);
             call.reject("آماده‌سازی PDF ناموفق بود: " + e.getMessage(), e);
         }
     }
