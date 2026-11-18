@@ -579,3 +579,17 @@ header{position:sticky}
 .modal .step-delete-icon{position:absolute;left:0;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:34px;height:34px;padding:0;border:1px solid #a9434b;border-radius:9px;background:#81343c;color:#fff}
 .modal .step-delete-icon svg{width:18px;height:18px}
 .modal .step-delete-icon:active{transform:translateY(-50%) scale(.96)}
+
+
+/* Lawyer identity profile and professional license in layer headings */
+.lawyer-profile-section{
+  border:1px solid var(--accent)!important;
+  border-radius:14px;
+  padding:14px;
+  background:linear-gradient(135deg,var(--panel),var(--panel2));
+}
+.lawyer-profile-section>h3{color:var(--accent)}
+.lawyer-profile-section .hint{line-height:1.9;margin:5px 0 12px}
+.lawyer-profile-section input{direction:rtl;text-align:right}
+.layer-title-group .lawyer-license{display:inline-block;margin-top:4px;color:var(--muted);font-size:10px}
+@media(max-width:650px){.layer-title-group .lawyer-license{font-size:9px}}
