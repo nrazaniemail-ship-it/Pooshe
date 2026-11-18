@@ -10,6 +10,7 @@ import android.graphics.pdf.PdfDocument;
 import android.util.DisplayMetrics;
 import android.view.View;
 import android.webkit.WebView;
+import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import com.getcapacitor.*;
 import com.getcapacitor.annotation.CapacitorPlugin;
@@ -115,6 +116,7 @@ public class BackupFolderPlugin extends Plugin {
         String fileName = call.getString("fileName", "pooshe-report.pdf");
         if (html == null || html.trim().isEmpty()) { call.reject("محتوای چاپ خالی است"); return; }
         ensureFolder();
+        WebView.enableSlowWholeDocumentDraw();
         WebView webView = new WebView(getContext());
         webView.setBackgroundColor(Color.WHITE);
         webView.getSettings().setJavaScriptEnabled(false);
@@ -123,7 +125,6 @@ public class BackupFolderPlugin extends Plugin {
                 view.post(() -> {
                     PdfDocument document = new PdfDocument();
                     try {
-                        DisplayMetrics metrics = getContext().getResources().getDisplayMetrics();
                         int dpi = 150;
                         int pageWidthPt = 595;
                         int pageHeightPt = 842;
@@ -133,7 +134,12 @@ public class BackupFolderPlugin extends Plugin {
                             View.MeasureSpec.makeMeasureSpec(widthPx, View.MeasureSpec.EXACTLY),
                             View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
                         );
-                        int contentHeightPx = Math.max(view.getMeasuredHeight(), pageHeightPx);
+                        int contentHeightPx = Math.max(Math.round(view.getContentHeight() * view.getScale()), pageHeightPx);
+                        view.measure(
+                            View.MeasureSpec.makeMeasureSpec(widthPx, View.MeasureSpec.EXACTLY),
+                            View.MeasureSpec.makeMeasureSpec(contentHeightPx, View.MeasureSpec.EXACTLY)
+                        );
+                        view.layout(0, 0, widthPx, contentHeightPx);
                         view.layout(0, 0, widthPx, contentHeightPx);
                         int pageCount = Math.max(1, (int)Math.ceil(contentHeightPx / (double)pageHeightPx));
                         if (pageCount > 100) throw new IllegalStateException("تعداد صفحات PDF بیش از حد مجاز است");
