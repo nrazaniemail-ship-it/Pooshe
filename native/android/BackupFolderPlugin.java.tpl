@@ -7,22 +7,48 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.graphics.Color;
 import android.graphics.pdf.PdfDocument;
-import android.util.DisplayMetrics;
 import android.view.View;
-import android.webkit.WebView;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import com.getcapacitor.*;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 @CapacitorPlugin(name = "BackupFolder")
 public class BackupFolderPlugin extends Plugin {
     private static final String RELATIVE_DIR = Environment.DIRECTORY_DOWNLOADS + "/pooshe backups/";
+
+    private String uniqueFileName(String requested) throws Exception {
+        String clean = new File(requested == null ? "pooshe-export" : requested).getName();
+        int dot = clean.lastIndexOf('.');
+        String base = dot > 0 ? clean.substring(0, dot) : clean;
+        String ext = dot > 0 ? clean.substring(dot) : "";
+        String candidate = clean;
+        int index = 1;
+        while (fileNameExists(candidate)) {
+            candidate = base + " (" + index++ + ")" + ext;
+        }
+        return candidate;
+    }
+
+    private boolean fileNameExists(String fileName) throws Exception {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            String[] projection = { MediaStore.MediaColumns._ID };
+            String selection = MediaStore.MediaColumns.RELATIVE_PATH + "=? AND " + MediaStore.MediaColumns.DISPLAY_NAME + "=?";
+            try (android.database.Cursor cursor = getContext().getContentResolver().query(
+                    MediaStore.Downloads.EXTERNAL_CONTENT_URI, projection, selection,
+                    new String[]{RELATIVE_DIR, fileName}, null)) {
+                return cursor != null && cursor.moveToFirst();
+            }
+        }
+        File dir = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "pooshe backups");
+        return new File(dir, fileName).exists();
+    }
 
     private Uri saveBytes(String fileName, String mimeType, byte[] bytes) throws Exception {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -99,6 +125,7 @@ public class BackupFolderPlugin extends Plugin {
         if (content == null) { call.reject("محتوای فایل خالی است"); return; }
         try {
             ensureFolder();
+            fileName = uniqueFileName(fileName);
             saveBytes(fileName, mimeType, content.getBytes(StandardCharsets.UTF_8));
             JSObject out = new JSObject();
             out.put("saved", true);
@@ -113,67 +140,91 @@ public class BackupFolderPlugin extends Plugin {
     @PluginMethod
     public void savePdf(PluginCall call) {
         String html = call.getString("html");
-        String fileName = call.getString("fileName", "pooshe-report.pdf");
-        if (html == null || html.trim().isEmpty()) { call.reject("محتوای چاپ خالی است"); return; }
-        ensureFolder();
-        WebView.enableSlowWholeDocumentDraw();
-        WebView webView = new WebView(getContext());
-        webView.setBackgroundColor(Color.WHITE);
-        webView.getSettings().setJavaScriptEnabled(false);
-        webView.setWebViewClient(new WebViewClient() {
-            @Override public void onPageFinished(WebView view, String url) {
-                view.post(() -> {
-                    PdfDocument document = new PdfDocument();
-                    try {
-                        int dpi = 150;
-                        int pageWidthPt = 595;
-                        int pageHeightPt = 842;
-                        int widthPx = Math.round(pageWidthPt * dpi / 72f);
-                        int pageHeightPx = Math.round(pageHeightPt * dpi / 72f);
-                        view.measure(
-                            View.MeasureSpec.makeMeasureSpec(widthPx, View.MeasureSpec.EXACTLY),
-                            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-                        );
-                        int contentHeightPx = Math.max(Math.round(view.getContentHeight() * view.getScale()), pageHeightPx);
-                        view.measure(
-                            View.MeasureSpec.makeMeasureSpec(widthPx, View.MeasureSpec.EXACTLY),
-                            View.MeasureSpec.makeMeasureSpec(contentHeightPx, View.MeasureSpec.EXACTLY)
-                        );
-                        view.layout(0, 0, widthPx, contentHeightPx);
-                        view.layout(0, 0, widthPx, contentHeightPx);
-                        int pageCount = Math.max(1, (int)Math.ceil(contentHeightPx / (double)pageHeightPx));
-                        if (pageCount > 100) throw new IllegalStateException("تعداد صفحات PDF بیش از حد مجاز است");
-                        float scale = 72f / dpi;
-                        for (int pageIndex = 0; pageIndex < pageCount; pageIndex++) {
-                            PdfDocument.PageInfo info = new PdfDocument.PageInfo.Builder(pageWidthPt, pageHeightPt, pageIndex + 1).create();
-                            PdfDocument.Page page = document.startPage(info);
-                            page.getCanvas().drawColor(Color.WHITE);
-                            page.getCanvas().save();
-                            page.getCanvas().scale(scale, scale);
-                            page.getCanvas().translate(0, -pageIndex * pageHeightPx);
-                            view.draw(page.getCanvas());
-                            page.getCanvas().restore();
-                            document.finishPage(page);
+        String requestedName = call.getString("fileName", "pooshe-report.pdf");
+        if (html == null || html.trim().isEmpty()) {
+            call.reject("محتوای چاپ خالی است");
+            return;
+        }
+        try {
+            ensureFolder();
+            final String fileName = uniqueFileName(requestedName);
+            final String printableHtml = html.replace("</head>",
+                "<style>html,body{background:#fff!important}.report-actions,.report-preview-toolbar,.judicial-actions,.form-actions,button{display:none!important}</style></head>");
+            WebView.enableSlowWholeDocumentDraw();
+            final WebView webView = new WebView(getContext());
+            webView.setBackgroundColor(Color.WHITE);
+            webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+            webView.setVerticalScrollBarEnabled(false);
+            webView.setHorizontalScrollBarEnabled(false);
+            webView.getSettings().setJavaScriptEnabled(true);
+            webView.getSettings().setDefaultTextEncodingName("UTF-8");
+
+            final FrameLayout decor = (FrameLayout) getActivity().getWindow().getDecorView();
+            final int dpi = 150;
+            final int pageWidthPt = 595;
+            final int pageHeightPt = 842;
+            final int widthPx = Math.round(pageWidthPt * dpi / 72f);
+            final int pageHeightPx = Math.round(pageHeightPt * dpi / 72f);
+            FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(widthPx, pageHeightPx);
+            decor.addView(webView, layoutParams);
+            webView.setAlpha(0.01f);
+
+            webView.setWebViewClient(new WebViewClient() {
+                @Override public void onPageFinished(WebView view, String url) {
+                    view.evaluateJavascript(
+                        "(function(){return Math.max(document.documentElement.scrollHeight,document.body?document.body.scrollHeight:0);})()",
+                        value -> {
+                            PdfDocument document = new PdfDocument();
+                            try {
+                                double cssHeight = Double.parseDouble(value.replace("\\"", ""));
+                                int contentHeightPx = Math.max(
+                                    (int)Math.ceil(cssHeight * view.getScale()), pageHeightPx
+                                );
+                                view.measure(
+                                    View.MeasureSpec.makeMeasureSpec(widthPx, View.MeasureSpec.EXACTLY),
+                                    View.MeasureSpec.makeMeasureSpec(contentHeightPx, View.MeasureSpec.EXACTLY)
+                                );
+                                view.layout(0, 0, widthPx, contentHeightPx);
+                                int pageCount = Math.max(1, (int)Math.ceil(contentHeightPx / (double)pageHeightPx));
+                                if (pageCount > 100) throw new IllegalStateException("تعداد صفحات PDF بیش از حد مجاز است");
+                                float scale = 72f / dpi;
+                                for (int pageIndex = 0; pageIndex < pageCount; pageIndex++) {
+                                    PdfDocument.PageInfo info = new PdfDocument.PageInfo.Builder(
+                                        pageWidthPt, pageHeightPt, pageIndex + 1
+                                    ).create();
+                                    PdfDocument.Page page = document.startPage(info);
+                                    page.getCanvas().drawColor(Color.WHITE);
+                                    page.getCanvas().save();
+                                    page.getCanvas().scale(scale, scale);
+                                    page.getCanvas().translate(0, -pageIndex * pageHeightPx);
+                                    view.draw(page.getCanvas());
+                                    page.getCanvas().restore();
+                                    document.finishPage(page);
+                                }
+                                ByteArrayOutputStream output = new ByteArrayOutputStream();
+                                document.writeTo(output);
+                                saveBytes(fileName, "application/pdf", output.toByteArray());
+                                JSObject result = new JSObject();
+                                result.put("saved", true);
+                                result.put("fileName", fileName);
+                                result.put("folder", "Download/pooshe backups");
+                                result.put("format", "A4 portrait");
+                                result.put("pages", pageCount);
+                                call.resolve(result);
+                            } catch (Exception e) {
+                                call.reject("تولید یا ذخیره PDF ناموفق بود: " + e.getMessage(), e);
+                            } finally {
+                                document.close();
+                                decor.removeView(view);
+                                view.destroy();
+                            }
                         }
-                        ByteArrayOutputStream output = new ByteArrayOutputStream();
-                        document.writeTo(output);
-                        saveBytes(fileName, "application/pdf", output.toByteArray());
-                        JSObject result = new JSObject();
-                        result.put("saved", true);
-                        result.put("fileName", fileName);
-                        result.put("folder", "Download/pooshe backups");
-                        result.put("format", "A4 portrait");
-                        result.put("pages", pageCount);
-                        call.resolve(result);
-                    } catch (Exception e) {
-                        call.reject("تولید یا ذخیره PDF ناموفق بود: " + e.getMessage(), e);
-                    } finally {
-                        document.close();
-                        view.destroy();
-                    }
-                });
-            }
-        });
-        webView.loadDataWithBaseURL("https://localhost/", html, "text/html", "UTF-8", null);
+                    );
+                }
+            });
+            webView.loadDataWithBaseURL("https://localhost/", printableHtml, "text/html", "UTF-8", null);
+        } catch (Exception e) {
+            call.reject("آماده‌سازی PDF ناموفق بود: " + e.getMessage(), e);
+        }
     }
 }
