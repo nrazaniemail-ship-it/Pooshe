@@ -1,0 +1,29 @@
+name: Package Pooshe source ZIP
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Create source archive
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          ARCHIVE="V5-pooshe${VERSION}-main.zip"
+          zip -r "$ARCHIVE" . \
+            -x ".git/*" "node_modules/*" "dist/*" "android/.gradle/*" "android/build/*" "android/app/build/*"
+          unzip -t "$ARCHIVE"
+          echo "ARCHIVE=$ARCHIVE" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: V5-pooshe1.0.0-main
+          path: ${{ env.ARCHIVE }}
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
