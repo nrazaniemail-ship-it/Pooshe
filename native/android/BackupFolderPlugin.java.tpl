@@ -171,25 +171,13 @@ public class BackupFolderPlugin extends Plugin {
         }
     }
 
-    private void cleanupPdfView(WebView view) {
-        try {
-            if (view != null) {
-                if (view.getParent() instanceof android.view.ViewGroup) {
-                    ((android.view.ViewGroup) view.getParent()).removeView(view);
-                }
-                view.stopLoading();
-                view.destroy();
-            }
-        } catch (Exception ignored) { }
-    }
-
-    // Keep the print WebView alive while Android's print UI is visible.
+    // Keep the WebView alive while Android's print framework consumes its adapter.
     private WebView printWebView;
 
     @PluginMethod
     public void savePdf(PluginCall call) {
-        String html = call.getString("html");
-        String requestedName = call.getString("fileName", "pooshe-report.pdf");
+        final String html = call.getString("html");
+        final String requestedName = call.getString("fileName", "pooshe-report.pdf");
         if (html == null || html.trim().isEmpty()) {
             call.reject("محتوای گزارش برای چاپ خالی است");
             return;
@@ -202,92 +190,90 @@ public class BackupFolderPlugin extends Plugin {
             if (activity == null) throw new IllegalStateException("صفحه فعال برنامه در دسترس نیست");
 
             activity.runOnUiThread(() -> {
-                final WebView webView = new WebView(activity);
-                final Handler handler = new Handler(Looper.getMainLooper());
-                final java.util.concurrent.atomic.AtomicBoolean finished = new java.util.concurrent.atomic.AtomicBoolean(false);
-                printWebView = webView;
+                try {
+                    // Match the proven Namello implementation: the print WebView must NOT
+                    // be added to the Activity view hierarchy. A Handler (not View.postDelayed)
+                    // schedules printing after the page has finished loading.
+                    final WebView webView = new WebView(activity);
+                    printWebView = webView;
+                    final Handler handler = new Handler(Looper.getMainLooper());
+                    final java.util.concurrent.atomic.AtomicBoolean started =
+                        new java.util.concurrent.atomic.AtomicBoolean(false);
 
-                FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
-                );
-                activity.addContentView(webView, params);
-                webView.setAlpha(0.01f);
-                webView.setClickable(false);
-                webView.setFocusable(false);
-                webView.setBackgroundColor(Color.WHITE);
-                webView.getSettings().setJavaScriptEnabled(true);
-                webView.getSettings().setDefaultTextEncodingName("UTF-8");
-
-                Runnable timeout = () -> {
-                    if (finished.compareAndSet(false, true)) {
-                        cleanupPdfView(webView);
-                        if (printWebView == webView) printWebView = null;
-                        call.reject("آماده‌سازی پنجره چاپ بیش از ۴۵ ثانیه طول کشید");
-                    }
-                };
-                handler.postDelayed(timeout, 45000);
-
-                webView.setWebViewClient(new WebViewClient() {
-                    @Override public void onPageFinished(WebView view, String url) {
-                        if (finished.get()) return;
-                        handler.postDelayed(() -> {
-                            if (finished.get()) return;
-                            try {
-                                android.print.PrintManager manager =
-                                    (android.print.PrintManager) activity.getSystemService(android.content.Context.PRINT_SERVICE);
-                                if (manager == null) throw new IllegalStateException("سرویس چاپ اندروید در دسترس نیست");
-
-                                String jobName = fileName.replaceFirst("(?i)\\.pdf$", "");
-                                PrintDocumentAdapter adapter = view.createPrintDocumentAdapter(jobName);
-                                PrintAttributes attributes = new PrintAttributes.Builder()
-                                    .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
-                                    .setResolution(new PrintAttributes.Resolution("pooshe", "Pooshe", 300, 300))
-                                    .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
-                                    .setColorMode(PrintAttributes.COLOR_MODE_COLOR)
-                                    .build();
-
-                                manager.print("پوشه - " + jobName, adapter, attributes);
-                                finished.set(true);
-                                handler.removeCallbacks(timeout);
-
-                                JSObject result = new JSObject();
-                                result.put("saved", false);
-                                result.put("printDialogOpened", true);
-                                result.put("fileName", fileName);
-                                result.put("folder", "انتخاب محل ذخیره در پنجره چاپ اندروید");
-                                call.resolve(result);
-
-                                handler.postDelayed(() -> {
-                                    cleanupPdfView(view);
-                                    if (printWebView == view) printWebView = null;
-                                }, 300000);
-                            } catch (Exception e) {
-                                if (finished.compareAndSet(false, true)) {
-                                    handler.removeCallbacks(timeout);
-                                    cleanupPdfView(view);
-                                    if (printWebView == view) printWebView = null;
-                                    call.reject("بازکردن پنجره چاپ اندروید ناموفق بود: " + e.getMessage(), e);
-                                }
-                            }
-                        }, 900);
-                    }
-
-                    @Override public void onReceivedError(WebView view, android.webkit.WebResourceRequest request, android.webkit.WebResourceError error) {
-                        if (request != null && request.isForMainFrame() && finished.compareAndSet(false, true)) {
-                            handler.removeCallbacks(timeout);
-                            cleanupPdfView(view);
-                            if (printWebView == view) printWebView = null;
-                            call.reject("بارگذاری گزارش برای چاپ ناموفق بود");
+                    final Runnable timeout = () -> {
+                        if (started.compareAndSet(false, true)) {
+                            android.util.Log.e("PooshePDF", "Timed out while loading printable HTML");
+                            call.reject("بارگذاری گزارش برای چاپ بیش از ۴۵ ثانیه طول کشید");
                         }
-                    }
-                });
+                    };
+                    handler.postDelayed(timeout, 45000);
 
-                String printableHtml = html.replace("</head>",
-                    "<style>html,body{background:#fff!important}.report-actions,.report-preview-toolbar,.judicial-actions,.form-actions,button{display:none!important}body{margin:24px}</style></head>");
-                webView.loadDataWithBaseURL("https://localhost/", printableHtml, "text/html", "UTF-8", null);
+                    webView.setBackgroundColor(Color.WHITE);
+                    webView.getSettings().setJavaScriptEnabled(true);
+                    webView.getSettings().setDefaultTextEncodingName("UTF-8");
+                    webView.setWebViewClient(new WebViewClient() {
+                        @Override
+                        public void onPageFinished(WebView view, String url) {
+                            if (started.get()) return;
+                            handler.postDelayed(() -> {
+                                if (!started.compareAndSet(false, true)) return;
+                                handler.removeCallbacks(timeout);
+                                try {
+                                    android.print.PrintManager manager =
+                                        (android.print.PrintManager) activity.getSystemService(
+                                            android.content.Context.PRINT_SERVICE
+                                        );
+                                    if (manager == null) {
+                                        throw new IllegalStateException("سرویس چاپ اندروید در دسترس نیست");
+                                    }
+
+                                    String jobName = fileName.replaceFirst("(?i)\\.pdf$", "");
+                                    PrintDocumentAdapter adapter = view.createPrintDocumentAdapter(jobName);
+                                    PrintAttributes attributes = new PrintAttributes.Builder()
+                                        .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
+                                        .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
+                                        .build();
+
+                                    manager.print(jobName, adapter, attributes);
+                                    JSObject result = new JSObject();
+                                    result.put("saved", false);
+                                    result.put("printDialogOpened", true);
+                                    result.put("fileName", fileName);
+                                    result.put("folder", "انتخاب محل ذخیره در پنجره چاپ اندروید");
+                                    call.resolve(result);
+                                } catch (Throwable error) {
+                                    android.util.Log.e("PooshePDF", "Could not open Android print dialog", error);
+                                    call.reject("بازکردن پنجره چاپ اندروید ناموفق بود: " +
+                                        (error.getMessage() == null ? error.getClass().getSimpleName() : error.getMessage()), error);
+                                }
+                            }, 900);
+                        }
+
+                        @Override
+                        public void onReceivedError(WebView view,
+                                android.webkit.WebResourceRequest request,
+                                android.webkit.WebResourceError error) {
+                            if (request != null && request.isForMainFrame()
+                                    && started.compareAndSet(false, true)) {
+                                handler.removeCallbacks(timeout);
+                                android.util.Log.e("PooshePDF", "Printable HTML failed to load: " + error);
+                                call.reject("بارگذاری گزارش برای چاپ ناموفق بود");
+                            }
+                        }
+                    });
+
+                    String printableHtml = html.replace("</head>",
+                        "<style>html,body{background:#fff!important}.report-actions,.report-preview-toolbar,.judicial-actions,.form-actions,button{display:none!important}body{margin:24px}</style></head>");
+                    webView.loadDataWithBaseURL("https://localhost/", printableHtml, "text/html", "UTF-8", null);
+                } catch (Throwable error) {
+                    android.util.Log.e("PooshePDF", "PDF preparation failed", error);
+                    call.reject("آماده‌سازی PDF ناموفق بود: " +
+                        (error.getMessage() == null ? error.getClass().getSimpleName() : error.getMessage()), error);
+                }
             });
-        } catch (Exception e) {
-            call.reject("آماده‌سازی PDF ناموفق بود: " + e.getMessage(), e);
+        } catch (Throwable error) {
+            call.reject("آماده‌سازی PDF ناموفق بود: " +
+                (error.getMessage() == null ? error.getClass().getSimpleName() : error.getMessage()), error);
         }
     }
 
