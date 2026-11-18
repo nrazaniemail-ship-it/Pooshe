@@ -4,6 +4,8 @@ import android.content.ContentValues;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.MediaStore;
 import android.print.PrintAttributes;
 import android.print.PrintDocumentAdapter;
@@ -184,17 +186,25 @@ public class BackupFolderPlugin extends Plugin {
             if (activity == null) throw new IllegalStateException("صفحه فعال برنامه در دسترس نیست");
             activity.runOnUiThread(() -> {
                 final WebView webView = new WebView(activity);
+                final java.util.concurrent.atomic.AtomicBoolean finished = new java.util.concurrent.atomic.AtomicBoolean(false);
+                final Handler mainHandler = new Handler(Looper.getMainLooper());
+                Runnable timeout = () -> {
+                    if (finished.compareAndSet(false, true)) {
+                        cleanupPdfView(webView);
+                        call.reject("آماده‌سازی PDF بیش از ۲۰ ثانیه طول کشید. لطفاً دوباره تلاش کنید.");
+                    }
+                };
+                mainHandler.postDelayed(timeout, 20000);
                 webView.setBackgroundColor(Color.WHITE);
                 webView.getSettings().setJavaScriptEnabled(false);
                 webView.getSettings().setDefaultTextEncodingName("UTF-8");
                 webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
                 webView.setWebViewClient(new WebViewClient() {
-                    private boolean completed = false;
-
                     @Override public void onPageFinished(WebView view, String url) {
-                        if (completed) return;
-                        completed = true;
+                        if (finished.get()) return;
                         view.post(() -> {
+                            if (!finished.compareAndSet(false, true)) return;
+                            mainHandler.removeCallbacks(timeout);
                             try {
                                 final int pageWidth = 595;
                                 final int pageHeight = 842;
@@ -242,6 +252,14 @@ public class BackupFolderPlugin extends Plugin {
                                 call.reject("ساخت یا ذخیره PDF ناموفق بود: " + e.getMessage(), e);
                             }
                         });
+                    }
+
+                    @Override public void onReceivedError(WebView view, android.webkit.WebResourceRequest request, android.webkit.WebResourceError error) {
+                        if (request != null && request.isForMainFrame() && finished.compareAndSet(false, true)) {
+                            mainHandler.removeCallbacks(timeout);
+                            cleanupPdfView(view);
+                            call.reject("بارگذاری محتوای گزارش برای ساخت PDF ناموفق بود.");
+                        }
                     }
                 });
                 String printableHtml = html.replace("</head>",
