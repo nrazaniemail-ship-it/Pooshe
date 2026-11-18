@@ -1,5 +1,6 @@
 import { Capacitor, registerPlugin } from "@capacitor/core";
 import { BAZAAR_RSA_PUBLIC_KEY } from "./bazaar-config.js";
+import { evaluateAccess } from "./access-policy.js";
 
 const Billing = registerPlugin("CafeBazaarBilling");
 export const PRODUCTS = [
@@ -23,13 +24,13 @@ const localTrialActive = () => {
   return started > 0 && now() >= started && now() < started + TRIAL_MS;
 };
 export function accessStatus() {
-  const paid = [...activeIds].some(id => PAID_IDS.has(id));
-  const bazaarTrial = activeIds.has("trial_subscription");
-  const trial = !paid && (bazaarTrial || localTrialActive());
+  const evaluated = evaluateAccess({ now: now(), trialStartedAt: readTrial(), activeProductIds: [...activeIds] });
   return {
-    active: paid || trial, paid, trial, bazaarTrial, readOnly: !(paid || trial),
-    trialStartedAt: readTrial(), trialEndsAt: readTrial() ? readTrial() + TRIAL_MS : 0,
-    activeProducts: [...activeIds], native: Capacitor.isNativePlatform(),
+    ...evaluated,
+    trialStartedAt: readTrial(),
+    trialEndsAt: readTrial() ? readTrial() + TRIAL_MS : 0,
+    activeProducts: [...activeIds],
+    native: Capacitor.isNativePlatform(),
     configured: Boolean(BAZAAR_RSA_PUBLIC_KEY && BAZAAR_RSA_PUBLIC_KEY.trim().length > 40),
     error: lastBillingError
   };
