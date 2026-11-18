@@ -21,8 +21,42 @@ function bindPlayer(){const a=getAudio();restoreLastPodcast();if(!a.dataset.posi
 function shell(html){$("#app").innerHTML='<div class="shell"><header><div class="brand"><img class="brand-logo" src="./pooshe-icon.png?v=6" alt="نشان پوشه"><div><b class="brand-name">پوشه<sup class="app-version">1.0.0</sup></b><small>دستیار وکلاء</small></div></div><div class="head-actions">'+(page!=="library"?playerPanel():"")+(page!=="library"?'<button id="playerToggle" class="player-toggle" title="نمایش / پنهان کردن پخش‌کننده">♫</button>':"")+'</div></header><main>'+html+'</main><nav>'+nav.map(n=>'<button data-page="'+n[0]+'" class="'+(page===n[0]?"active":"")+'">'+icon(n[1])+'<small>'+n[2]+'</small></button>').join("")+'</nav><div id="modal"></div><div id="toast"></div></div>';const audio=getAudio();if(page==="library"){audio.controls=true;audio.classList.add("podcast-audio-controls");const id=activePodcast?.id||S.settings.lastPodcastId;const slot=id?$("#podcastAudioSlot-"+id):null;if(slot)slot.appendChild(audio);else document.body.appendChild(audio)}else{audio.controls=false;audio.classList.remove("podcast-audio-controls");document.body.appendChild(audio)}document.querySelectorAll("[data-page]").forEach(b=>b.onclick=()=>goPage(b.dataset.page));$("#playerToggle")?.addEventListener("click",()=>{playerVisible=!playerVisible;$(".persistent-player")?.classList.toggle("player-hidden",!playerVisible)});bindPlayer();applyIconColor();}
 function head(t,d,button){const titled=["میزکار","آرشیو پرونده‌ها","تقویم پیگیری"].includes(t);const label=t==="میزکار"?"میز کار":t;return '<div class="pagehead"><div class="'+(t==="میزکار"?"desk-heading":"")+'">'+(titled?'<div class="layer-title-group"><h1>'+label+'</h1><span class="desk-separator">|</span><small>وکیل- خانم سمیه رحیمی فرد</small></div>':'<h1>'+label+'</h1>')+'<p>'+d+'</p></div>'+(button||"")+'</div>'}
 function card(c){const s=current(c);return '<article class="case" data-open="'+c.id+'"><div class="row"><span class="folder">'+icon("folder")+'</span><label>'+c.group+' · '+c.type+'</label><button class="case-delete" data-deletecase="'+c.id+'" title="حذف پرونده" aria-label="حذف پرونده">'+icon("trash")+'</button></div><h3>'+esc(c.title)+'</h3><p>'+icon("users")+' '+esc(c.client||"موکل ثبت نشده")+(c.phone1?' · <a class="client-phone" href="tel:'+esc(c.phone1)+'">'+esc(c.phone1)+'</a>':"")+(c.phone2?' · <a class="client-phone" href="tel:'+esc(c.phone2)+'">'+esc(c.phone2)+'</a>':"")+'　 ·　 '+esc(c.fileNo||"بدون شماره")+'</p><div class="bar"><i style="width:'+pct(c)+'%"></i></div><div class="foot"><span>'+pct(c)+'٪ تکمیل</span><span>'+(s?"گام جاری: "+esc(s.title):"مختومه")+'</span></div></article>'}
-async function downloadFile(name,content,mime){const blob=new Blob([content],{type:mime});if(Capacitor.isNativePlatform()){try{const path="Download/Pooshe/"+name;await Filesystem.writeFile({path,data:content,directory:Directory.ExternalStorage,encoding:Encoding.UTF8,recursive:true});toast("فایل Excel در حافظه داخلی، پوشه Download/Pooshe ذخیره شد");return}catch(e){console.error("Downloads export failed",e);try{const path="Pooshe/"+name;const saved=await Filesystem.writeFile({path,data:content,directory:Directory.Documents,encoding:Encoding.UTF8,recursive:true});const uri=saved.uri||(await Filesystem.getUri({path,directory:Directory.Documents})).uri;await Share.share({title:name,text:"ذخیره فایل در Downloads ممکن نبود؛ فایل جایگزین در Documents/Pooshe ذخیره شد",url:uri,dialogTitle:"ذخیره یا اشتراک فایل Excel"});toast("دسترسی به Downloads ممکن نبود؛ فایل در Documents/Pooshe ذخیره شد");return}catch(f){alert("ذخیره فایل ناموفق بود: "+(f.message||f));return}}}if(typeof File!=="undefined"&&navigator.share&&navigator.canShare){try{const file=new File([blob],name,{type:mime});if(navigator.canShare({files:[file]})){await navigator.share({files:[file],title:name});return}}catch(e){if(e.name==="AbortError")return;console.warn("Share export fallback",e)}}const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;a.rel="noopener";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);toast("دانلود فایل آغاز شد")}
-function exportSheet(title,headers,rows){title="وکیل- خانم سمیه رحیمی فرد | "+title;const cell=v=>String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");const html='<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><style>body{font-family:Tahoma}table{border-collapse:collapse}td,th{border:1px solid #999;padding:7px;text-align:right;mso-number-format:"\\@";}</style></head><body><table><thead><tr><th colspan="'+headers.length+'">'+cell(title)+'</th></tr><tr>'+headers.map(x=>'<th>'+cell(x)+'</th>').join("")+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(x=>'<td>'+cell(x)+'</td>').join("")+'</tr>').join("")+'</tbody></table></body></html>';downloadFile("pooshe-report.xls","\ufeff"+html,"application/vnd.ms-excel;charset=utf-8")}
+async function downloadFile(name,content,mime){
+ const blob=new Blob([content],{type:mime});
+ if(Capacitor.isNativePlatform()){
+  try{
+   const path="Pooshe/"+name;
+   const saved=await Filesystem.writeFile({path,data:content,directory:Directory.Documents,encoding:Encoding.UTF8,recursive:true});
+   const uri=saved.uri||(await Filesystem.getUri({path,directory:Directory.Documents})).uri;
+   await Share.share({title:name,text:"فایل خروجی پوشه",url:uri,dialogTitle:"ذخیره یا ارسال فایل Excel"});
+   toast("فایل ساخته شد؛ محل آن Documents/Pooshe است");
+   return;
+  }catch(e){console.error("Excel export failed",e);alert("ساخت یا اشتراک فایل ناموفق بود: "+(e.message||e));return}
+ }
+ const url=URL.createObjectURL(blob),a=document.createElement("a");
+ a.href=url;a.download=name;a.rel="noopener";
+ document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),60000);
+ toast("دانلود فایل Excel آغاز شد");
+}
+function exportSheet(title,headers,rows){
+ title="وکیل- خانم سمیه رحیمی فرد | "+title;
+ const escXml=v=>String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;");
+ const cell=v=>{
+  if(typeof v==="number"&&Number.isFinite(v))return '<Cell><Data ss:Type="Number">'+v+'</Data></Cell>';
+  return '<Cell><Data ss:Type="String">'+escXml(v)+'</Data></Cell>';
+ };
+ const xml='<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?>'+
+ '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">'+
+ '<Styles><Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Horizontal="Right" ss:Vertical="Center"/><Font ss:FontName="Tahoma" ss:Size="10"/></Style><Style ss:ID="Title"><Alignment ss:Horizontal="Right"/><Font ss:FontName="Tahoma" ss:Bold="1" ss:Size="14"/></Style><Style ss:ID="Header"><Alignment ss:Horizontal="Right" ss:WrapText="1"/><Font ss:FontName="Tahoma" ss:Bold="1"/></Style></Styles>'+
+ '<Worksheet ss:Name="گزارش"><Table><Column ss:Width="150"/>'+
+ '<Row><Cell ss:MergeAcross="'+Math.max(0,headers.length-1)+'" ss:StyleID="Title"><Data ss:Type="String">'+escXml(title)+'</Data></Cell></Row>'+
+ '<Row>'+headers.map(x=>'<Cell ss:StyleID="Header"><Data ss:Type="String">'+escXml(x)+'</Data></Cell>').join("")+'</Row>'+
+ rows.map(r=>'<Row>'+headers.map((_,i)=>cell(Array.isArray(r)?r[i]??"": "")).join("")+'</Row>').join("")+
+ '</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><DisplayRightToLeft/><FreezePanes/><FrozenNoSplit/><SplitHorizontal>2</SplitHorizontal><TopRowBottomPane>2</TopRowBottomPane></WorksheetOptions></Worksheet></Workbook>';
+ downloadFile("pooshe-report.xls","\\ufeff"+xml,"application/vnd.ms-excel;charset=utf-8");
+}
+(title,headers,rows){title="وکیل- خانم سمیه رحیمی فرد | "+title;const cell=v=>String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");const html='<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><style>body{font-family:Tahoma}table{border-collapse:collapse}td,th{border:1px solid #999;padding:7px;text-align:right;mso-number-format:"\\@";}</style></head><body><table><thead><tr><th colspan="'+headers.length+'">'+cell(title)+'</th></tr><tr>'+headers.map(x=>'<th>'+cell(x)+'</th>').join("")+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(x=>'<td>'+cell(x)+'</td>').join("")+'</tr>').join("")+'</tbody></table></body></html>';downloadFile("pooshe-report.xls","\ufeff"+html,"application/vnd.ms-excel;charset=utf-8")}
 
 
 function printReport(title,headers,rows){
