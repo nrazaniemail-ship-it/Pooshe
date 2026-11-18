@@ -91,6 +91,10 @@ if(!updated.includes("PoosheAndroid")){
   updated=updated.replace(/\n}\s*$/, "\n"+nativeClass+"\n}\n");
 }
 
+// Persist MainActivity after both plugin registration and JavaScript bridge injection.
+// Previously the file was written before PoosheAndroid was added, so the APK never received the bridge.
+fs.writeFileSync(main,updated);
+
 const iconSource=path.resolve("resources/icon.png");
 if(!fs.existsSync(iconSource))throw new Error("Pooshe launcher icon resource is missing");
 const res=path.join(root,"app/src/main/res");
