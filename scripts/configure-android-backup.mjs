@@ -46,7 +46,7 @@ if(!updated.includes("PoosheAndroid")){
     "        @JavascriptInterface",
     "        public boolean setLauncherIconColor(final String color) {",
     "            String key = \"Black\";",
-    "            if (\"#d6b36b\".equalsIgnoreCase(color)) key = \"Gold\";",
+    "            else if (\"#d6b36b\".equalsIgnoreCase(color)) key = \"Gold\";",
     "            else if (\"#56c4b6\".equalsIgnoreCase(color)) key = \"Teal\";",
     "            else if (\"#82aeea\".equalsIgnoreCase(color)) key = \"Blue\";",
     "            else if (\"#e49baa\".equalsIgnoreCase(color)) key = \"Rose\";",
@@ -54,9 +54,24 @@ if(!updated.includes("PoosheAndroid")){
     "            else if (\"#58a66b\".equalsIgnoreCase(color)) key = \"Green\";",
     "            else if (\"#ed9148\".equalsIgnoreCase(color)) key = \"Orange\";",
     "            else if (\"#e5c84b\".equalsIgnoreCase(color)) key = \"Yellow\";",
+    "            else if (\"#34495e\".equalsIgnoreCase(color)) key = \"Slate\";",
+    "            else if (\"#607d8b\".equalsIgnoreCase(color)) key = \"BlueGrey\";",
+    "            else if (\"#00a6a6\".equalsIgnoreCase(color)) key = \"Aqua\";",
+    "            else if (\"#0077b6\".equalsIgnoreCase(color)) key = \"Ocean\";",
+    "            else if (\"#4361ee\".equalsIgnoreCase(color)) key = \"Indigo\";",
+    "            else if (\"#7209b7\".equalsIgnoreCase(color)) key = \"Violet\";",
+    "            else if (\"#b5179e\".equalsIgnoreCase(color)) key = \"Magenta\";",
+    "            else if (\"#f72585\".equalsIgnoreCase(color)) key = \"Pink\";",
+    "            else if (\"#e76f51\".equalsIgnoreCase(color)) key = \"Coral\";",
+    "            else if (\"#f4a261\".equalsIgnoreCase(color)) key = \"Peach\";",
+    "            else if (\"#2a9d8f\".equalsIgnoreCase(color)) key = \"SeaGreen\";",
+    "            else if (\"#8ab17d\".equalsIgnoreCase(color)) key = \"Sage\";",
+    "            else if (\"#bc6c25\".equalsIgnoreCase(color)) key = \"Copper\";",
+    "            else if (\"#6d597a\".equalsIgnoreCase(color)) key = \"Mauve\";",
+    "            else if (\"#adb5bd\".equalsIgnoreCase(color)) key = \"Silver\";",
     "            else if (!\"black\".equalsIgnoreCase(color)) return false;",
     "            android.content.pm.PackageManager pm = getPackageManager();",
-    "            String[] keys = {\"Black\",\"Gold\",\"Teal\",\"Blue\",\"Rose\",\"Purple\",\"Green\",\"Orange\",\"Yellow\"};",
+    "            String[] keys = {\"Black\",\"Gold\",\"Teal\",\"Blue\",\"Rose\",\"Purple\",\"Green\",\"Orange\",\"Yellow\",\"Slate\",\"BlueGrey\",\"Aqua\",\"Ocean\",\"Indigo\",\"Violet\",\"Magenta\",\"Pink\",\"Coral\",\"Peach\",\"SeaGreen\",\"Sage\",\"Copper\",\"Mauve\",\"Silver\"};",
     "            for (String item : keys) {",
     "                android.content.ComponentName component = new android.content.ComponentName(MainActivity.this, getPackageName()+\".MainActivityIcon\"+item);",
     "                pm.setComponentEnabledSetting(component, item.equals(key) ? android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED : android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED, android.content.pm.PackageManager.DONT_KILL_APP);",
@@ -121,12 +136,12 @@ const iconSource=path.resolve("resources/icon.png");
 if(!fs.existsSync(iconSource))throw new Error("Pooshe launcher icon resource is missing");
 const res=path.join(root,"app/src/main/res"),drawable=path.join(res,"drawable-nodpi");
 fs.mkdirSync(drawable,{recursive:true});
-const colors=[["Black","#000000"],["Gold","#d6b36b"],["Teal","#56c4b6"],["Blue","#82aeea"],["Rose","#e49baa"],["Purple","#9b7bea"],["Green","#58a66b"],["Orange","#ed9148"],["Yellow","#e5c84b"]];
+const colors=[["Black","#000000"],["Gold","#d6b36b"],["Teal","#56c4b6"],["Blue","#82aeea"],["Rose","#e49baa"],["Purple","#9b7bea"],["Green","#58a66b"],["Orange","#ed9148"],["Yellow","#e5c84b"],["Slate","#34495e"],["BlueGrey","#607d8b"],["Aqua","#00a6a6"],["Ocean","#0077b6"],["Indigo","#4361ee"],["Violet","#7209b7"],["Magenta","#b5179e"],["Pink","#f72585"],["Coral","#e76f51"],["Peach","#f4a261"],["SeaGreen","#2a9d8f"],["Sage","#8ab17d"],["Copper","#bc6c25"],["Mauve","#6d597a"],["Silver","#adb5bd"]];
 const py=String.raw`from PIL import Image
 import sys, os
 src,out=sys.argv[1],sys.argv[2]
 original=Image.open(src).convert("RGBA")
-palette=[("black","#000000"),("gold","#d6b36b"),("teal","#56c4b6"),("blue","#82aeea"),("rose","#e49baa"),("purple","#9b7bea"),("green","#58a66b"),("orange","#ed9148"),("yellow","#e5c84b")]
+palette=[("black","#000000"),("gold","#d6b36b"),("teal","#56c4b6"),("blue","#82aeea"),("rose","#e49baa"),("purple","#9b7bea"),("green","#58a66b"),("orange","#ed9148"),("yellow","#e5c84b"),("slate","#34495e"),("bluegrey","#607d8b"),("aqua","#00a6a6"),("ocean","#0077b6"),("indigo","#4361ee"),("violet","#7209b7"),("magenta","#b5179e"),("pink","#f72585"),("coral","#e76f51"),("peach","#f4a261"),("seagreen","#2a9d8f"),("sage","#8ab17d"),("copper","#bc6c25"),("mauve","#6d597a"),("silver","#adb5bd")]
 for name,color in palette:
  im=original.copy(); pix=im.load(); rgb=tuple(int(color[i:i+2],16) for i in (1,3,5))
  for y in range(im.height):
