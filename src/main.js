@@ -56,7 +56,6 @@ function exportSheet(title,headers,rows){
  '</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><DisplayRightToLeft/><FreezePanes/><FrozenNoSplit/><SplitHorizontal>2</SplitHorizontal><TopRowBottomPane>2</TopRowBottomPane></WorksheetOptions></Worksheet></Workbook>';
  downloadFile("pooshe-report.xls","\\ufeff"+xml,"application/vnd.ms-excel;charset=utf-8");
 }
-(title,headers,rows){title="وکیل- خانم سمیه رحیمی فرد | "+title;const cell=v=>String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");const html='<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><style>body{font-family:Tahoma}table{border-collapse:collapse}td,th{border:1px solid #999;padding:7px;text-align:right;mso-number-format:"\\@";}</style></head><body><table><thead><tr><th colspan="'+headers.length+'">'+cell(title)+'</th></tr><tr>'+headers.map(x=>'<th>'+cell(x)+'</th>').join("")+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(x=>'<td>'+cell(x)+'</td>').join("")+'</tr>').join("")+'</tbody></table></body></html>';downloadFile("pooshe-report.xls","\ufeff"+html,"application/vnd.ms-excel;charset=utf-8")}
 
 
 function printReport(title,headers,rows){
