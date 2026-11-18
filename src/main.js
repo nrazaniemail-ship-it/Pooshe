@@ -37,7 +37,7 @@ async function downloadFile(name,content,mime){
  toast("دانلود فایل آغاز شد");
 }
 function exportSheet(title,headers,rows){
- title=lawyerReportHeading()+(lawyerProfile().license?" | شماره پروانه وکالت: "+lawyerProfile().license:"")+" | "+title;
+ const profile=lawyerProfile();
  const escXml=v=>String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;");
  const cell=v=>{
   if(typeof v==="number"&&Number.isFinite(v))return '<Cell><Data ss:Type="Number">'+v+'</Data></Cell>';
@@ -47,10 +47,12 @@ function exportSheet(title,headers,rows){
  '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">'+
  '<Styles><Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Horizontal="Right" ss:Vertical="Center"/><Font ss:FontName="Tahoma" ss:Size="10"/></Style><Style ss:ID="Title"><Alignment ss:Horizontal="Right"/><Font ss:FontName="Tahoma" ss:Bold="1" ss:Size="14"/></Style><Style ss:ID="Header"><Alignment ss:Horizontal="Right" ss:WrapText="1"/><Font ss:FontName="Tahoma" ss:Bold="1"/></Style></Styles>'+
  '<Worksheet ss:Name="گزارش"><Table><Column ss:Width="150"/>'+
+ '<Row><Cell ss:MergeAcross="'+Math.max(0,headers.length-1)+'" ss:StyleID="Title"><Data ss:Type="String">'+escXml(lawyerReportHeading())+'</Data></Cell></Row>'+
+ (profile.license?'<Row><Cell ss:MergeAcross="'+Math.max(0,headers.length-1)+'"><Data ss:Type="String">'+escXml("شماره پروانه وکالت: "+profile.license)+'</Data></Cell></Row>':'')+
  '<Row><Cell ss:MergeAcross="'+Math.max(0,headers.length-1)+'" ss:StyleID="Title"><Data ss:Type="String">'+escXml(title)+'</Data></Cell></Row>'+
  '<Row>'+headers.map(x=>'<Cell ss:StyleID="Header"><Data ss:Type="String">'+escXml(x)+'</Data></Cell>').join("")+'</Row>'+
  rows.map(r=>'<Row>'+headers.map((_,i)=>cell(Array.isArray(r)?r[i]??"": "")).join("")+'</Row>').join("")+
- '</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><DisplayRightToLeft/><FreezePanes/><FrozenNoSplit/><SplitHorizontal>2</SplitHorizontal><TopRowBottomPane>2</TopRowBottomPane></WorksheetOptions></Worksheet></Workbook>';
+ '</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><DisplayRightToLeft/><FreezePanes/><FrozenNoSplit/><SplitHorizontal>4</SplitHorizontal><TopRowBottomPane>4</TopRowBottomPane></WorksheetOptions></Worksheet></Workbook>';
  downloadFile("pooshe-report.xls","\uFEFF"+xml,"application/vnd.ms-excel;charset=utf-8");
 }
 
