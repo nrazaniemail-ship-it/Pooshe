@@ -52,7 +52,7 @@ function exportSheet(title,headers,rows){
  '<Row><Cell ss:MergeAcross="'+Math.max(0,headers.length-1)+'" ss:StyleID="Title"><Data ss:Type="String">'+escXml(title)+'</Data></Cell></Row>'+
  '<Row>'+headers.map(x=>'<Cell ss:StyleID="Header"><Data ss:Type="String">'+escXml(x)+'</Data></Cell>').join("")+'</Row>'+
  rows.map(r=>'<Row>'+headers.map((_,i)=>cell(Array.isArray(r)?r[i]??"": "")).join("")+'</Row>').join("")+
- '</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><DisplayRightToLeft/><FreezePanes/><FrozenNoSplit/><SplitHorizontal>4</SplitHorizontal><TopRowBottomPane>4</TopRowBottomPane></WorksheetOptions></Worksheet></Workbook>';
+ '</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><DisplayRightToLeft/><FreezePanes/><FrozenNoSplit/><SplitHorizontal>'+ (profile.license?4:3) +'</SplitHorizontal><TopRowBottomPane>'+ (profile.license?4:3) +'</TopRowBottomPane></WorksheetOptions></Worksheet></Workbook>';
  downloadFile("pooshe-report.xls","\uFEFF"+xml,"application/vnd.ms-excel;charset=utf-8");
 }
 
