@@ -202,10 +202,9 @@ public class BackupFolderPlugin extends Plugin {
                 webView.setWebViewClient(new WebViewClient() {
                     @Override public void onPageFinished(WebView view, String url) {
                         if (finished.get()) return;
-                        view.post(() -> {
-                            if (!finished.compareAndSet(false, true)) return;
-                            mainHandler.removeCallbacks(timeout);
-                            try {
+                        if (!finished.compareAndSet(false, true)) return;
+                        mainHandler.removeCallbacks(timeout);
+                        try {
                                 final int pageWidth = 595;
                                 final int pageHeight = 842;
                                 view.measure(
@@ -247,11 +246,10 @@ public class BackupFolderPlugin extends Plugin {
                                 result.put("fileName", fileName);
                                 result.put("folder", "Download/pooshe backups");
                                 call.resolve(result);
-                            } catch (Exception e) {
-                                cleanupPdfView(view);
-                                call.reject("ساخت یا ذخیره PDF ناموفق بود: " + e.getMessage(), e);
-                            }
-                        });
+                        } catch (Exception e) {
+                            cleanupPdfView(view);
+                            call.reject("ساخت یا ذخیره PDF ناموفق بود: " + e.getMessage(), e);
+                        }
                     }
 
                     @Override public void onReceivedError(WebView view, android.webkit.WebResourceRequest request, android.webkit.WebResourceError error) {
