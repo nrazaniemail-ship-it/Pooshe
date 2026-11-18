@@ -113,6 +113,14 @@ jobs:
       - name: Generate Android project
         run: npm run android:add
 
+      - name: Set up Python for launcher icon generation
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install launcher icon image dependency
+        run: python -m pip install --disable-pip-version-check Pillow
+
       - name: Configure Android project
         run: npm run android:configure
 
