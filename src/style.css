@@ -600,3 +600,20 @@ header{position:sticky}
 .color-swatch{width:27px;height:27px;min-width:27px;padding:0;border:2px solid var(--line);border-radius:50%;background:var(--swatch);box-shadow:0 1px 3px #0003;justify-self:center}
 .color-swatch.selected{outline:2px solid var(--accent);outline-offset:3px;border-color:#fff;transform:scale(1.08)}
 @media(max-width:420px){.color-palette{grid-template-columns:repeat(6,minmax(25px,1fr));gap:10px}.color-swatch{width:26px;height:26px;min-width:26px}}
+
+/* Subscription status and read-only access */
+.access-readonly-banner{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:12px 0 18px;padding:13px 15px;border:1px solid #bd8844;border-radius:13px;background:color-mix(in srgb,#bd8844 12%,var(--panel));color:var(--text);font-size:12px}
+.access-readonly-banner b{color:#d7a65c;white-space:nowrap}
+.access-readonly-banner span{flex:1;line-height:1.9}
+.access-readonly-banner a{color:var(--accent);font-weight:800;white-space:nowrap}
+.subscription-panel{margin:0 0 18px;padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--panel);display:grid;gap:12px}
+.subscription-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.subscription-heading h3{margin:0 0 5px}
+.subscription-heading p{margin:0;font-size:12px;color:var(--muted)}
+.subscription-products{display:grid;gap:9px}
+.subscription-product{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px;border:1px solid var(--line);border-radius:12px}
+.subscription-product>div{display:grid;gap:5px}
+.subscription-product small{font-size:11px;color:var(--muted)}
+.subscription-product button{white-space:nowrap}
+.subscription-error{margin:0;padding:10px 12px;border-radius:10px;background:#a43c3c18;color:var(--text);font-size:12px;line-height:1.8}
+@media(max-width:480px){.subscription-product{align-items:stretch;flex-direction:column}.subscription-product button{width:100%}.subscription-heading{align-items:flex-start;flex-direction:column}}
