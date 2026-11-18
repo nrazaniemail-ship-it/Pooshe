@@ -4,13 +4,11 @@ import android.content.ContentValues;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
-import android.os.CancellationSignal;
-import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
-import android.print.PageRange;
-import android.print.PrintAttributes;
-import android.print.PrintDocumentAdapter;
-import android.print.PrintDocumentInfo;
+import android.graphics.Color;
+import android.graphics.pdf.PdfDocument;
+import android.util.DisplayMetrics;
+import android.view.View;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import com.getcapacitor.*;
@@ -118,65 +116,56 @@ public class BackupFolderPlugin extends Plugin {
         if (html == null || html.trim().isEmpty()) { call.reject("محتوای چاپ خالی است"); return; }
         ensureFolder();
         WebView webView = new WebView(getContext());
+        webView.setBackgroundColor(Color.WHITE);
         webView.getSettings().setJavaScriptEnabled(false);
         webView.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView view, String url) {
-                PrintDocumentAdapter adapter = view.createPrintDocumentAdapter(fileName);
-                PrintAttributes attrs = new PrintAttributes.Builder()
-                    .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
-                    .setResolution(new PrintAttributes.Resolution("pooshe", "Pooshe PDF", 300, 300))
-                    .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
-                    .build();
-                CancellationSignal signal = new CancellationSignal();
-                adapter.onLayout(null, attrs, signal, new PrintDocumentAdapter.LayoutResultCallback() {
-                    @Override public void onLayoutFinished(PrintDocumentInfo info, boolean changed) {
-                        File temp = new File(getContext().getCacheDir(), "pooshe-print-" + System.currentTimeMillis() + ".pdf");
-                        try {
-                            ParcelFileDescriptor pfd = ParcelFileDescriptor.open(temp,
-                                ParcelFileDescriptor.MODE_CREATE | ParcelFileDescriptor.MODE_TRUNCATE | ParcelFileDescriptor.MODE_READ_WRITE);
-                            adapter.onWrite(new PageRange[]{PageRange.ALL_PAGES}, pfd, signal, new PrintDocumentAdapter.WriteResultCallback() {
-                                @Override public void onWriteFinished(PageRange[] pages) {
-                                    try {
-                                        pfd.close();
-                                        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-                                        try (FileInputStream input = new FileInputStream(temp)) {
-                                            byte[] buffer = new byte[8192]; int count;
-                                            while ((count = input.read(buffer)) != -1) bytes.write(buffer, 0, count);
-                                        }
-                                        saveBytes(fileName, "application/pdf", bytes.toByteArray());
-                                        JSObject out = new JSObject();
-                                        out.put("saved", true); out.put("fileName", fileName);
-                                        out.put("folder", "Download/pooshe backups"); out.put("format", "A4 portrait");
-                                        call.resolve(out);
-                                    } catch (Exception e) {
-                                        call.reject("ذخیره PDF ناموفق بود: " + e.getMessage(), e);
-                                    } finally {
-                                        temp.delete(); view.destroy();
-                                    }
-                                }
-                                @Override public void onWriteFailed(CharSequence error) {
-                                    try { pfd.close(); } catch (Exception ignored) { }
-                                    temp.delete(); view.destroy();
-                                    call.reject("تولید PDF ناموفق بود: " + error);
-                                }
-                                @Override public void onWriteCancelled() {
-                                    try { pfd.close(); } catch (Exception ignored) { }
-                                    temp.delete(); view.destroy();
-                                    call.reject("تولید PDF لغو شد");
-                                }
-                            });
-                        } catch (Exception e) {
-                            temp.delete(); view.destroy();
-                            call.reject("آماده‌سازی PDF ناموفق بود: " + e.getMessage(), e);
+                view.post(() -> {
+                    PdfDocument document = new PdfDocument();
+                    try {
+                        DisplayMetrics metrics = getContext().getResources().getDisplayMetrics();
+                        int dpi = 150;
+                        int pageWidthPt = 595;
+                        int pageHeightPt = 842;
+                        int widthPx = Math.round(pageWidthPt * dpi / 72f);
+                        int pageHeightPx = Math.round(pageHeightPt * dpi / 72f);
+                        view.measure(
+                            View.MeasureSpec.makeMeasureSpec(widthPx, View.MeasureSpec.EXACTLY),
+                            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                        );
+                        int contentHeightPx = Math.max(view.getMeasuredHeight(), pageHeightPx);
+                        view.layout(0, 0, widthPx, contentHeightPx);
+                        int pageCount = Math.max(1, (int)Math.ceil(contentHeightPx / (double)pageHeightPx));
+                        if (pageCount > 100) throw new IllegalStateException("تعداد صفحات PDF بیش از حد مجاز است");
+                        float scale = 72f / dpi;
+                        for (int pageIndex = 0; pageIndex < pageCount; pageIndex++) {
+                            PdfDocument.PageInfo info = new PdfDocument.PageInfo.Builder(pageWidthPt, pageHeightPt, pageIndex + 1).create();
+                            PdfDocument.Page page = document.startPage(info);
+                            page.getCanvas().drawColor(Color.WHITE);
+                            page.getCanvas().save();
+                            page.getCanvas().scale(scale, scale);
+                            page.getCanvas().translate(0, -pageIndex * pageHeightPx);
+                            view.draw(page.getCanvas());
+                            page.getCanvas().restore();
+                            document.finishPage(page);
                         }
+                        ByteArrayOutputStream output = new ByteArrayOutputStream();
+                        document.writeTo(output);
+                        saveBytes(fileName, "application/pdf", output.toByteArray());
+                        JSObject result = new JSObject();
+                        result.put("saved", true);
+                        result.put("fileName", fileName);
+                        result.put("folder", "Download/pooshe backups");
+                        result.put("format", "A4 portrait");
+                        result.put("pages", pageCount);
+                        call.resolve(result);
+                    } catch (Exception e) {
+                        call.reject("تولید یا ذخیره PDF ناموفق بود: " + e.getMessage(), e);
+                    } finally {
+                        document.close();
+                        view.destroy();
                     }
-                    @Override public void onLayoutFailed(CharSequence error) {
-                        view.destroy(); call.reject("صفحه‌بندی PDF ناموفق بود: " + error);
-                    }
-                    @Override public void onLayoutCancelled() {
-                        view.destroy(); call.reject("صفحه‌بندی PDF لغو شد");
-                    }
-                }, signal);
+                });
             }
         });
         webView.loadDataWithBaseURL("https://localhost/", html, "text/html", "UTF-8", null);
