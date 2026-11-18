@@ -21,6 +21,33 @@ if(!updated.includes("BackupFolderPlugin.class")){
   fs.writeFileSync(main,updated);
 }
 console.log("Configured persistent SAF backup folder picker for "+pkg);
+/* Cafe Bazaar Poolakey 2.1.0 subscription bridge. */
+const rootGradleFile=path.join(root,"build.gradle");
+let rootGradle=fs.existsSync(rootGradleFile)?fs.readFileSync(rootGradleFile,"utf8"):'allprojects { repositories { google(); mavenCentral(); maven { url "https://jitpack.io" } } }\\n';
+if(!rootGradle.includes("maven-central.storage-download.googleapis.com"))rootGradle=rootGradle.replace(/repositories\\s*\\{/g,m=>m+'\\n        maven { url "https://maven-central.storage-download.googleapis.com/maven2/" }');
+if(!rootGradle.includes("kotlin-gradle-plugin")){
+ if(rootGradle.includes("dependencies {"))rootGradle=rootGradle.replace("dependencies {",'dependencies {\\n        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21"');
+ else rootGradle='buildscript { repositories { google(); mavenCentral(); maven { url "https://jitpack.io" } } dependencies { classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21" } }\\n'+rootGradle;
+}
+if(!rootGradle.includes("https://jitpack.io"))rootGradle=rootGradle.replace(/repositories\\s*\\{/g,m=>m+'\\n        maven { url "https://jitpack.io" }');
+fs.writeFileSync(rootGradleFile,rootGradle);
+const appGradleFile=path.join(root,"app/build.gradle");let appGradle=fs.readFileSync(appGradleFile,"utf8");
+if(!appGradle.includes("kotlin-android")){const re=/apply plugin: ['"]com\\.android\\.application['"]\\s*/;if(!re.test(appGradle))throw new Error("Android application plugin not found for Poolakey");appGradle=appGradle.replace(re,m=>m+"\\napply plugin: 'kotlin-android'\\n");}
+for(const dep of ['implementation "com.github.cafebazaar.Poolakey:poolakey:2.1.0"','implementation "com.github.cafebazaar:bazaarUpdater:1.2.0"'])if(!appGradle.includes(dep))appGradle=appGradle.replace(/dependencies\\s*\\{/,m=>m+'\\n    '+dep);
+if(!/android\\s*\\{[\\s\\S]*?\\bkotlinOptions\\s*\\{/.test(appGradle)){
+ const start=appGradle.indexOf("android {");if(start<0)throw new Error("android block missing");
+ const open=appGradle.indexOf("{",start);let depth=0,end=-1;for(let i=open;i<appGradle.length;i++){if(appGradle[i]==="{")depth++;if(appGradle[i]==="}")depth--;if(depth===0){end=i;break}}
+ if(end<0)throw new Error("android block malformed");
+ appGradle=appGradle.slice(0,end)+'\\n    kotlinOptions { jvmTarget = "21" }\\n'+appGradle.slice(end);
+}
+fs.writeFileSync(appGradleFile,appGradle);
+const billingPluginPath=path.join(path.dirname(main),"CafeBazaarBillingPlugin.kt");
+const billingTemplate=fs.readFileSync("native/android/CafeBazaarBillingPlugin.kt.tpl","utf8").replace(/^package __PACKAGE__/m,"package "+pkg);
+fs.writeFileSync(billingPluginPath,billingTemplate);
+if(!updated.includes("CafeBazaarBillingPlugin.class"))updated=updated.replace("registerPlugin(BackupFolderPlugin.class);","registerPlugin(BackupFolderPlugin.class);\\n        registerPlugin(CafeBazaarBillingPlugin.class);");
+fs.writeFileSync(main,updated);
+console.log("Configured Cafe Bazaar Poolakey 2.1.0 billing bridge for "+pkg);
+
 // Native Android PDF printing uses the same MainActivity JavaScript bridge pattern
 // as Namello 1.0.2. This is intentionally independent from BackupFolderPlugin/Excel.
 if(!updated.includes("PoosheAndroid")){
