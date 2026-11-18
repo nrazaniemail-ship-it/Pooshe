@@ -167,7 +167,7 @@ public class BackupFolderPlugin extends Plugin {
             final int pageHeightPx = Math.round(pageHeightPt * dpi / 72f);
             FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(widthPx, pageHeightPx);
             decor.addView(webView, layoutParams);
-            webView.setAlpha(0.01f);
+            webView.setAlpha(0f);
 
             webView.setWebViewClient(new WebViewClient() {
                 @Override public void onPageFinished(WebView view, String url) {
@@ -188,6 +188,7 @@ public class BackupFolderPlugin extends Plugin {
                                 int pageCount = Math.max(1, (int)Math.ceil(contentHeightPx / (double)pageHeightPx));
                                 if (pageCount > 100) throw new IllegalStateException("تعداد صفحات PDF بیش از حد مجاز است");
                                 float scale = 72f / dpi;
+                                view.setAlpha(1f);
                                 for (int pageIndex = 0; pageIndex < pageCount; pageIndex++) {
                                     PdfDocument.PageInfo info = new PdfDocument.PageInfo.Builder(
                                         pageWidthPt, pageHeightPt, pageIndex + 1
@@ -202,6 +203,7 @@ public class BackupFolderPlugin extends Plugin {
                                     document.finishPage(page);
                                 }
                                 ByteArrayOutputStream output = new ByteArrayOutputStream();
+                                view.setAlpha(0f);
                                 document.writeTo(output);
                                 saveBytes(fileName, "application/pdf", output.toByteArray());
                                 JSObject result = new JSObject();
