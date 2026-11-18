@@ -25,8 +25,10 @@ jobs:
       - run: npm run android:configure
       - run: npm run android:sync
       - run: cd android && chmod +x gradlew && ./gradlew assembleDebug
+      - name: Rename installable APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/pooshe.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: pooshe-android-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: pooshe
+          path: android/app/build/outputs/apk/debug/pooshe.apk
           if-no-files-found: error
