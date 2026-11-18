@@ -59,6 +59,16 @@ function printReport(title,headers,rows){
  title="وکیل - خانم سمیه رحیمی فرد | "+title;
  const cell=v=>String(v??"—").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
  const html='<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><title>'+cell(title)+'</title><style>body{font-family:Tahoma,sans-serif;color:#111;background:#fff;margin:24px}h2{font-size:19px;margin:0 0 14px}p{font-size:12px}table{width:100%;border-collapse:collapse;margin-top:18px}th,td{border:1px solid #aeb7c2;padding:8px;text-align:right;font-size:11px;vertical-align:top}th{background:#e8edf3;font-weight:800}.report-actions{display:flex;gap:8px;margin:16px 0}.report-actions button{padding:10px 18px;border:0;border-radius:8px;background:#183c48;color:white;font-weight:700}@page{size:A4 portrait;margin:12mm}@media print{.report-actions{display:none}body{margin:0}}</style></head><body><div class="print-brand" style="display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #243f4a;padding-bottom:10px;margin-bottom:16px"><div style="display:flex;align-items:center;gap:10px"><img src="./pooshe-icon.png?v=6" alt="نشان پوشه" style="width:42px;height:42px;object-fit:contain"><div><b>پوشه</b><div style="font-size:10px">دستیار مدیریت پرونده‌های حقوقی</div></div></div><div style="text-align:left;font-size:11px">وکیل - خانم سمیه رحیمی فرد<br><b>پیش‌نویس داخلی — غیررسمی</b></div></div><div style="text-align:center;font-size:13px;margin:10px 0">بسمه تعالی</div><h2>'+cell(title)+'</h2><p>تاریخ تهیه: '+new Date().toLocaleDateString("fa-IR")+'</p><table><thead><tr>'+headers.map(x=>'<th>'+cell(x)+'</th>').join("")+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(x=>'<td>'+cell(x)+'</td>').join("")+'</tr>').join("")+'</tbody></table></body></html>';
+ if(Capacitor.isNativePlatform()){
+  toast("در حال ساخت و ذخیره مستقیم PDF...");
+  (async()=>{try{
+   if(!BackupFolder?.savePdf)throw new Error("ماژول ساخت PDF در این نسخه نصب نیست");
+   const result=await BackupFolder.savePdf({fileName:"pooshe-report-"+Date.now()+".pdf",html});
+   if(!result?.saved)throw new Error("ذخیره PDF از سوی اندروید تأیید نشد");
+   toast("PDF با موفقیت در Download/pooshe backups ذخیره شد");
+  }catch(e){console.error("Native PDF export failed",e);alert("ساخت / ذخیره PDF ناموفق بود: "+(e.message||e))}})();
+  return;
+ }
  reportPreview=true;history.pushState({...routeState(),reportPreview:true},"");
  const modalRoot=$("#modal");if(!modalRoot)return;
  modalRoot.innerHTML='<div class="report-preview-backdrop"><section class="report-preview" role="dialog" aria-label="پیش‌نمایش گزارش PDF"><div class="report-preview-toolbar"><b>پیش‌نمایش PDF</b><div><button type="button" id="printReportNow">چاپ / ذخیره PDF</button><button type="button" id="closeReportPreview">بازگشت</button></div></div><iframe title="پیش‌نمایش گزارش PDF"></iframe></section></div>';
