@@ -179,7 +179,6 @@ public class BackupFolderPlugin extends Plugin {
         }
         final String fileName;
         try {
-            ensureFolder();
             fileName = uniqueFileName(requestedName);
             final android.app.Activity activity = getActivity();
             if (activity == null) throw new IllegalStateException("صفحه فعال برنامه در دسترس نیست");
@@ -187,21 +186,10 @@ public class BackupFolderPlugin extends Plugin {
                 final WebView webView = new WebView(activity);
                 final Handler handler = new Handler(Looper.getMainLooper());
                 final java.util.concurrent.atomic.AtomicBoolean finished = new java.util.concurrent.atomic.AtomicBoolean(false);
-                final File tempPdf;
-                try {
-                    tempPdf = File.createTempFile("pooshe-print-", ".pdf", getContext().getCacheDir());
-                } catch (Exception e) {
-                    call.reject("ساخت فایل موقت PDF ناموفق بود: " + e.getMessage(), e);
-                    return;
-                }
-                final Runnable cleanup = () -> {
-                    cleanupPdfView(webView);
-                    if (tempPdf.exists()) tempPdf.delete();
-                };
                 final Runnable timeout = () -> {
                     if (finished.compareAndSet(false, true)) {
-                        cleanup.run();
-                        call.reject("تولید PDF بیش از ۶۰ ثانیه طول کشید");
+                        cleanupPdfView(webView);
+                        call.reject("آماده‌سازی گزارش PDF بیش از ۴۵ ثانیه طول کشید");
                     }
                 };
                 FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
@@ -220,114 +208,67 @@ public class BackupFolderPlugin extends Plugin {
                         handler.postDelayed(() -> {
                             if (finished.get()) return;
                             try {
-                                PrintAttributes attributes = new PrintAttributes.Builder()
-                                    .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
-                                    .setResolution(new PrintAttributes.Resolution("pooshe", "Pooshe PDF", 300, 300))
-                                    .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
-                                    .setColorMode(PrintAttributes.COLOR_MODE_COLOR)
-                                    .build();
-                                PrintDocumentAdapter adapter = view.createPrintDocumentAdapter("Pooshe Report");
-                                adapter.onLayout(null, attributes, new CancellationSignal(),
-                                    new PrintDocumentAdapter.LayoutResultCallback() {
-                                        @Override public void onLayoutFinished(PrintDocumentInfo info, boolean changed) {
-                                            if (finished.get()) return;
-                                            try {
-                                                final ParcelFileDescriptor descriptor = ParcelFileDescriptor.open(
-                                                    tempPdf,
-                                                    ParcelFileDescriptor.MODE_CREATE |
-                                                    ParcelFileDescriptor.MODE_TRUNCATE |
-                                                    ParcelFileDescriptor.MODE_READ_WRITE
-                                                );
-                                                adapter.onWrite(new PageRange[] { PageRange.ALL_PAGES }, descriptor,
-                                                    new CancellationSignal(),
-                                                    new PrintDocumentAdapter.WriteResultCallback() {
-                                                        @Override public void onWriteFinished(PageRange[] pages) {
-                                                            try {
-                                                                descriptor.close();
-                                                                ByteArrayOutputStream output = new ByteArrayOutputStream();
-                                                                try (FileInputStream input = new FileInputStream(tempPdf)) {
-                                                                    byte[] buffer = new byte[8192];
-                                                                    int count;
-                                                                    while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count);
-                                                                }
-                                                                byte[] pdfBytes = output.toByteArray();
-                                                                if (pdfBytes.length < 500) throw new IllegalStateException("محتوای PDF خالی است");
-                                                                saveBytes(fileName, "application/pdf", pdfBytes);
-                                                                if (finished.compareAndSet(false, true)) {
-                                                                    handler.removeCallbacks(timeout);
-                                                                    cleanup.run();
-                                                                    JSObject result = new JSObject();
-                                                                    result.put("saved", true);
-                                                                    result.put("fileName", fileName);
-                                                                    result.put("folder", "Download/pooshe backups");
-                                                                    call.resolve(result);
-                                                                }
-                                                            } catch (Exception ex) {
-                                                                if (finished.compareAndSet(false, true)) {
-                                                                    handler.removeCallbacks(timeout);
-                                                                    cleanup.run();
-                                                                    call.reject("ذخیره PDF ناموفق بود: " + ex.getMessage(), ex);
-                                                                }
-                                                            }
-                                                        }
-                                                        @Override public void onWriteFailed(CharSequence error) {
-                                                            if (finished.compareAndSet(false, true)) {
-                                                                handler.removeCallbacks(timeout);
-                                                                try { descriptor.close(); } catch (Exception ignored) { }
-                                                                cleanup.run();
-                                                                call.reject("تبدیل گزارش به PDF ناموفق بود: " + error);
-                                                            }
-                                                        }
-                                                        @Override public void onWriteCancelled() {
-                                                            if (finished.compareAndSet(false, true)) {
-                                                                handler.removeCallbacks(timeout);
-                                                                try { descriptor.close(); } catch (Exception ignored) { }
-                                                                cleanup.run();
-                                                                call.reject("ساخت PDF لغو شد");
-                                                            }
-                                                        }
-                                                    });
-                                            } catch (Exception ex) {
-                                                if (finished.compareAndSet(false, true)) {
-                                                    handler.removeCallbacks(timeout);
-                                                    cleanup.run();
-                                                    call.reject("شروع تبدیل PDF ناموفق بود: " + ex.getMessage(), ex);
-                                                }
-                                            }
-                                        }
-                                        @Override public void onLayoutFailed(CharSequence error) {
-                                            if (finished.compareAndSet(false, true)) {
-                                                handler.removeCallbacks(timeout);
-                                                cleanup.run();
-                                                call.reject("صفحه‌بندی گزارش PDF ناموفق بود: " + error);
-                                            }
-                                        }
-                                        @Override public void onLayoutCancelled() {
-                                            if (finished.compareAndSet(false, true)) {
-                                                handler.removeCallbacks(timeout);
-                                                cleanup.run();
-                                                call.reject("صفحه‌بندی PDF لغو شد");
-                                            }
-                                        }
-                                    }, null);
-                            } catch (Exception ex) {
+                                float density = activity.getResources().getDisplayMetrics().density;
+                                int viewWidth = Math.max(1, Math.round(794f * density));
+                                int contentHeight = Math.max(1, Math.round(view.getContentHeight() * density));
+                                int viewHeight = Math.max(contentHeight, Math.round(1123f * density));
+                                view.measure(
+                                    View.MeasureSpec.makeMeasureSpec(viewWidth, View.MeasureSpec.EXACTLY),
+                                    View.MeasureSpec.makeMeasureSpec(viewHeight, View.MeasureSpec.EXACTLY)
+                                );
+                                view.layout(0, 0, viewWidth, viewHeight);
+
+                                final int pdfWidth = 595;
+                                final int pdfHeight = 842;
+                                final float scale = (float) pdfWidth / (float) viewWidth;
+                                final float sourcePageHeight = pdfHeight / scale;
+                                final int pageCount = Math.max(1, (int)Math.ceil((double)viewHeight / sourcePageHeight));
+                                PdfDocument document = new PdfDocument();
+                                for (int pageNumber = 0; pageNumber < pageCount; pageNumber++) {
+                                    PdfDocument.PageInfo info = new PdfDocument.PageInfo.Builder(
+                                        pdfWidth, pdfHeight, pageNumber + 1
+                                    ).create();
+                                    PdfDocument.Page page = document.startPage(info);
+                                    android.graphics.Canvas canvas = page.getCanvas();
+                                    canvas.drawColor(Color.WHITE);
+                                    canvas.save();
+                                    canvas.scale(scale, scale);
+                                    canvas.translate(0, -pageNumber * sourcePageHeight);
+                                    view.draw(canvas);
+                                    canvas.restore();
+                                    document.finishPage(page);
+                                }
+                                ByteArrayOutputStream output = new ByteArrayOutputStream();
+                                document.writeTo(output);
+                                document.close();
+                                byte[] pdfBytes = output.toByteArray();
+                                if (pdfBytes.length < 500) throw new IllegalStateException("فایل PDF خروجی خالی است");
+                                saveBytes(fileName, "application/pdf", pdfBytes);
+                                finished.set(true);
+                                cleanupPdfView(view);
+                                JSObject result = new JSObject();
+                                result.put("saved", true);
+                                result.put("printDialogOpened", false);
+                                result.put("fileName", fileName);
+                                result.put("folder", "Download/pooshe backups");
+                                call.resolve(result);
+                            } catch (Exception e) {
                                 if (finished.compareAndSet(false, true)) {
-                                    handler.removeCallbacks(timeout);
-                                    cleanup.run();
-                                    call.reject("آماده‌سازی PDF ناموفق بود: " + ex.getMessage(), ex);
+                                    cleanupPdfView(view);
+                                    call.reject("ساخت یا ذخیره مستقیم PDF ناموفق بود: " + e.getMessage(), e);
                                 }
                             }
-                        }, 800);
+                        }, 700);
                     }
                     @Override public void onReceivedError(WebView view, android.webkit.WebResourceRequest request, android.webkit.WebResourceError error) {
                         if (request != null && request.isForMainFrame() && finished.compareAndSet(false, true)) {
                             handler.removeCallbacks(timeout);
-                            cleanup.run();
+                            cleanupPdfView(view);
                             call.reject("بارگذاری محتوای گزارش برای PDF ناموفق بود");
                         }
                     }
                 });
-                handler.postDelayed(timeout, 60000);
+                handler.postDelayed(timeout, 45000);
                 String printableHtml = html.replace("</head>",
                     "<style>html,body{background:#fff!important}body{margin:24px;-webkit-print-color-adjust:exact;print-color-adjust:exact}.report-actions,.report-preview-toolbar,.judicial-actions,.form-actions,button{display:none!important}</style></head>");
                 webView.loadDataWithBaseURL("https://localhost/", printableHtml, "text/html", "UTF-8", null);
