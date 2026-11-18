@@ -149,7 +149,7 @@ function formList(c,s){if(!requireWriteAccess("تغییر فرم‌های پرو
  $("#save").style.display="none";
  document.querySelectorAll("[data-form-choice]").forEach(b=>b.onclick=()=>{const f=forms.find(x=>x.id===b.dataset.formChoice);if(f)structuredForm(c,s,f)});
 }
-function printJudicialForm(c,s,f,data){
+function printJudicialForm(c,s,f,data){if(!requireWriteAccess("چاپ یا خروجی PDF"))return;
  const escH=v=>String(v??"—").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
  const complaint=f.id==="criminal-complaint",title=complaint?"شکواییه":"دادخواست بدوی";
  const emblem="https://upload.wikimedia.org/wikipedia/commons/5/5c/%D8%A2%D8%B1%D9%85_%D9%82%D9%88%D9%87_%D9%82%D8%B6%D8%A7%D8%A6%DB%8C%D9%87_%D8%AC%D9%85%D9%87%D9%88%D8%B1%DB%8C_%D8%A7%D8%B3%D9%84%D8%A7%D9%85%DB%8C_%D8%A7%DB%8C%D8%B1%D8%A7%D9%86.png";
@@ -216,7 +216,7 @@ function bindSettings(){const upd=(k,v)=>{S.settings[k]=v;persist()};const profi
 async function runScheduledBackup(){const s=S.settings;if(!s.autoBackupEnabled||!s.backupInterval||!Capacitor.isNativePlatform())return;const last=Date.parse(s.lastBackupAt||"1970-01-01T00:00:00Z");if(Date.now()-last<Number(s.backupInterval))return;try{await saveBackupToChosenFolder();console.info("Pooshe automatic backup completed")}catch(e){console.warn("Pooshe automatic backup failed",e)}}
 function applyNotify(){checkWebReminders(S.cases,S.settings)}
 function showStartupError(err){console.error("Pooshe startup error",err);const root=document.querySelector("#app");if(root)root.innerHTML='<main dir="rtl" style="font-family:Tahoma,sans-serif;max-width:560px;margin:12vh auto;padding:24px;text-align:center;color:#243247"><h2>بارگذاری پوشه با مشکل روبه‌رو شد</h2><p>اتصال صفحه برقرار است، اما راه‌اندازی برنامه کامل نشده. لطفاً یک‌بار صفحه را تازه‌سازی کنید.</p><button onclick="location.reload()" style="padding:12px 22px;border:0;border-radius:10px;background:#d6b36b;color:#172333">تلاش دوباره</button></main>';}// Enforce the read-only policy at the event boundary as well as inside operation handlers.
-const poosheWriteClickSelector="#new,#newEmpty,#edit,#addStep,#reopen,[data-deletecase],[data-editstep],[data-forms],[data-done],[data-undo],[data-delfile],[data-reminder-toggle],[data-reminder-delete],.step-delete-icon";
+const poosheWriteClickSelector="#new,#newEmpty,#edit,#addStep,#reopen,[data-deletecase],[data-editstep],[data-forms],[data-done],[data-undo],[data-delfile],[data-reminder-toggle],[data-reminder-delete],[data-form-choice],#printJudicialNow,.step-delete-icon";
 document.addEventListener("click",e=>{
  if(!accessStatus().readOnly)return;
  const target=e.target instanceof Element?e.target:null;
