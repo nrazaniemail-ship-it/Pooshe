@@ -117,6 +117,8 @@ jobs:
         run: npm run android:configure
 
       - name: Build web app and sync Capacitor
+        env:
+          VITE_BAZAAR_RSA_PUBLIC_KEY: ${{ vars.VITE_BAZAAR_RSA_PUBLIC_KEY }}
         run: npm run android:sync
 
       - name: Build unsigned Release APK

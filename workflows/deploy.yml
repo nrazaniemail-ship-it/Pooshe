@@ -20,7 +20,10 @@ jobs:
           node-version: 20
       - run: npm install
       - run: npm test
-      - run: npm run build
+      - name: Build web app
+        env:
+          VITE_BAZAAR_RSA_PUBLIC_KEY: ${{ vars.VITE_BAZAAR_RSA_PUBLIC_KEY }}
+        run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
