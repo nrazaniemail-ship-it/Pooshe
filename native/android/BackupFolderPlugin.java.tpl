@@ -187,100 +187,93 @@ public class BackupFolderPlugin extends Plugin {
             call.reject("محتوای چاپ خالی است");
             return;
         }
+
         final String fileName;
         try {
             fileName = uniqueFileName(requestedName);
             final android.app.Activity activity = getActivity();
             if (activity == null) throw new IllegalStateException("صفحه فعال برنامه در دسترس نیست");
+
             activity.runOnUiThread(() -> {
                 final WebView webView = new WebView(activity);
-                final int pageWidth = 595;
-                final int pageHeight = 842;
-                FrameLayout.LayoutParams hiddenParams = new FrameLayout.LayoutParams(
-                    pageWidth, ViewGroup.LayoutParams.WRAP_CONTENT
+                final Handler handler = new Handler(Looper.getMainLooper());
+                final java.util.concurrent.atomic.AtomicBoolean completed = new java.util.concurrent.atomic.AtomicBoolean(false);
+                final java.util.concurrent.atomic.AtomicBoolean printStarted = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+                FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                    595, ViewGroup.LayoutParams.WRAP_CONTENT
                 );
-                hiddenParams.leftMargin = -10000;
-                activity.addContentView(webView, hiddenParams);
-                final java.util.concurrent.atomic.AtomicBoolean finished = new java.util.concurrent.atomic.AtomicBoolean(false);
-                final Handler mainHandler = new Handler(Looper.getMainLooper());
-                Runnable timeout = () -> {
-                    if (finished.compareAndSet(false, true)) {
+                params.leftMargin = -10000;
+                activity.addContentView(webView, params);
+
+                Runnable loadTimeout = () -> {
+                    if (completed.compareAndSet(false, true)) {
                         cleanupPdfView(webView);
-                        call.reject("آماده‌سازی PDF بیش از ۲۰ ثانیه طول کشید. لطفاً دوباره تلاش کنید.");
+                        call.reject("بارگذاری گزارش برای چاپ بیش از ۳۰ ثانیه طول کشید.");
                     }
                 };
-                mainHandler.postDelayed(timeout, 20000);
+                handler.postDelayed(loadTimeout, 30000);
+
                 webView.setBackgroundColor(Color.WHITE);
-                webView.getSettings().setJavaScriptEnabled(false);
+                webView.getSettings().setJavaScriptEnabled(true);
                 webView.getSettings().setDefaultTextEncodingName("UTF-8");
                 webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
                 webView.setWebViewClient(new WebViewClient() {
                     @Override public void onPageFinished(WebView view, String url) {
-                        if (finished.get()) return;
-                        if (!finished.compareAndSet(false, true)) return;
-                        mainHandler.removeCallbacks(timeout);
-                        try {
-                                view.measure(
-                                    View.MeasureSpec.makeMeasureSpec(pageWidth, View.MeasureSpec.EXACTLY),
-                                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-                                );
-                                int contentHeight = Math.max(
-                                    view.getMeasuredHeight(),
-                                    (int) Math.ceil(view.getContentHeight() * view.getScale())
-                                );
-                                if (contentHeight <= 0) {
-                                    view.measure(
-                                        View.MeasureSpec.makeMeasureSpec(pageWidth, View.MeasureSpec.EXACTLY),
-                                        View.MeasureSpec.makeMeasureSpec(pageHeight, View.MeasureSpec.AT_MOST)
-                                    );
-                                    contentHeight = Math.max(view.getMeasuredHeight(),
-                                        (int) Math.ceil(view.getContentHeight() * view.getScale()));
-                                }
-                                if (contentHeight <= 0) throw new IllegalStateException("محتوای گزارش قابل تبدیل به PDF نیست");
-                                view.layout(0, 0, pageWidth, contentHeight);
+                        if (completed.get() || !printStarted.compareAndSet(false, true)) return;
 
-                                PdfDocument pdf = new PdfDocument();
-                                int pageCount = Math.max(1, (contentHeight + pageHeight - 1) / pageHeight);
-                                for (int pageNumber = 0; pageNumber < pageCount; pageNumber++) {
-                                    PdfDocument.PageInfo info = new PdfDocument.PageInfo.Builder(
-                                        pageWidth, pageHeight, pageNumber + 1
-                                    ).create();
-                                    PdfDocument.Page page = pdf.startPage(info);
-                                    android.graphics.Canvas canvas = page.getCanvas();
-                                    canvas.save();
-                                    canvas.clipRect(0, 0, pageWidth, pageHeight);
-                                    canvas.translate(0, -pageNumber * pageHeight);
-                                    view.draw(canvas);
-                                    canvas.restore();
-                                    pdf.finishPage(page);
+                        // Give the WebView a moment to finish layout before handing it
+                        // to Android's native print pipeline.
+                        handler.postDelayed(() -> {
+                            if (completed.get()) return;
+                            try {
+                                handler.removeCallbacks(loadTimeout);
+                                android.print.PrintManager printManager =
+                                    (android.print.PrintManager) activity.getSystemService(android.content.Context.PRINT_SERVICE);
+                                if (printManager == null) {
+                                    throw new IllegalStateException("سرویس چاپ اندروید در دسترس نیست");
                                 }
 
-                                ByteArrayOutputStream output = new ByteArrayOutputStream();
-                                pdf.writeTo(output);
-                                pdf.close();
-                                saveBytes(fileName, "application/pdf", output.toByteArray());
-                                cleanupPdfView(view);
+                                String adapterName = fileName.replaceFirst("(?i)\\.pdf$", "");
+                                PrintDocumentAdapter adapter = view.createPrintDocumentAdapter(adapterName);
+                                PrintAttributes attributes = new PrintAttributes.Builder()
+                                    .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
+                                    .setResolution(new PrintAttributes.Resolution("pooshe", "Pooshe", 300, 300))
+                                    .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
+                                    .setColorMode(PrintAttributes.COLOR_MODE_COLOR)
+                                    .build();
+
+                                printManager.print("پوشه - " + adapterName, adapter, attributes);
+                                completed.set(true);
 
                                 JSObject result = new JSObject();
-                                result.put("saved", true);
-                                result.put("printDialogOpened", false);
+                                result.put("saved", false);
+                                result.put("printDialogOpened", true);
                                 result.put("fileName", fileName);
-                                result.put("folder", "Download/pooshe backups");
+                                result.put("folder", "انتخاب محل ذخیره در پنجره چاپ اندروید");
                                 call.resolve(result);
-                        } catch (Exception e) {
-                            cleanupPdfView(view);
-                            call.reject("ساخت یا ذخیره PDF ناموفق بود: " + e.getMessage(), e);
-                        }
+
+                                // Keep the WebView alive while Android's print adapter
+                                // renders the document; remove it after the print UI has had time.
+                                handler.postDelayed(() -> cleanupPdfView(view), 300000);
+                            } catch (Exception e) {
+                                completed.set(true);
+                                handler.removeCallbacks(loadTimeout);
+                                cleanupPdfView(view);
+                                call.reject("بازکردن پنجره چاپ اندروید ناموفق بود: " + e.getMessage(), e);
+                            }
+                        }, 500);
                     }
 
                     @Override public void onReceivedError(WebView view, android.webkit.WebResourceRequest request, android.webkit.WebResourceError error) {
-                        if (request != null && request.isForMainFrame() && finished.compareAndSet(false, true)) {
-                            mainHandler.removeCallbacks(timeout);
+                        if (request != null && request.isForMainFrame() && completed.compareAndSet(false, true)) {
+                            handler.removeCallbacks(loadTimeout);
                             cleanupPdfView(view);
                             call.reject("بارگذاری محتوای گزارش برای ساخت PDF ناموفق بود.");
                         }
                     }
                 });
+
                 String printableHtml = html.replace("</head>",
                     "<style>html,body{background:#fff!important}.report-actions,.report-preview-toolbar,.judicial-actions,.form-actions,button{display:none!important}body{margin:24px}</style></head>");
                 webView.loadDataWithBaseURL("https://localhost/", printableHtml, "text/html", "UTF-8", null);
