@@ -176,7 +176,7 @@ public class BackupFolderPlugin extends Plugin {
                         value -> {
                             PdfDocument document = new PdfDocument();
                             try {
-                                double cssHeight = Double.parseDouble(value.replace("\\"", ""));
+                                double cssHeight = Double.parseDouble(value.replace("\"", ""));
                                 int contentHeightPx = Math.max(
                                     (int)Math.ceil(cssHeight * view.getScale()), pageHeightPx
                                 );
