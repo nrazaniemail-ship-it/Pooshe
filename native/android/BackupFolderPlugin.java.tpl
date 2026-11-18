@@ -168,7 +168,15 @@ public class BackupFolderPlugin extends Plugin {
     }
 
     private void cleanupPdfView(WebView view) {
-        try { if (view != null) view.destroy(); } catch (Exception ignored) { }
+        try {
+            if (view != null) {
+                if (view.getParent() instanceof android.view.ViewGroup) {
+                    ((android.view.ViewGroup) view.getParent()).removeView(view);
+                }
+                view.stopLoading();
+                view.destroy();
+            }
+        } catch (Exception ignored) { }
     }
 
     @PluginMethod
@@ -186,6 +194,13 @@ public class BackupFolderPlugin extends Plugin {
             if (activity == null) throw new IllegalStateException("صفحه فعال برنامه در دسترس نیست");
             activity.runOnUiThread(() -> {
                 final WebView webView = new WebView(activity);
+                final int pageWidth = 595;
+                final int pageHeight = 842;
+                FrameLayout.LayoutParams hiddenParams = new FrameLayout.LayoutParams(
+                    pageWidth, ViewGroup.LayoutParams.WRAP_CONTENT
+                );
+                hiddenParams.leftMargin = -10000;
+                activity.addContentView(webView, hiddenParams);
                 final java.util.concurrent.atomic.AtomicBoolean finished = new java.util.concurrent.atomic.AtomicBoolean(false);
                 final Handler mainHandler = new Handler(Looper.getMainLooper());
                 Runnable timeout = () -> {
@@ -205,8 +220,6 @@ public class BackupFolderPlugin extends Plugin {
                         if (!finished.compareAndSet(false, true)) return;
                         mainHandler.removeCallbacks(timeout);
                         try {
-                                final int pageWidth = 595;
-                                final int pageHeight = 842;
                                 view.measure(
                                     View.MeasureSpec.makeMeasureSpec(pageWidth, View.MeasureSpec.EXACTLY),
                                     View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
@@ -215,6 +228,14 @@ public class BackupFolderPlugin extends Plugin {
                                     view.getMeasuredHeight(),
                                     (int) Math.ceil(view.getContentHeight() * view.getScale())
                                 );
+                                if (contentHeight <= 0) {
+                                    view.measure(
+                                        View.MeasureSpec.makeMeasureSpec(pageWidth, View.MeasureSpec.EXACTLY),
+                                        View.MeasureSpec.makeMeasureSpec(pageHeight, View.MeasureSpec.AT_MOST)
+                                    );
+                                    contentHeight = Math.max(view.getMeasuredHeight(),
+                                        (int) Math.ceil(view.getContentHeight() * view.getScale()));
+                                }
                                 if (contentHeight <= 0) throw new IllegalStateException("محتوای گزارش قابل تبدیل به PDF نیست");
                                 view.layout(0, 0, pageWidth, contentHeight);
 
