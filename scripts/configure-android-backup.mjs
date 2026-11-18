@@ -46,6 +46,7 @@ if(!updated.includes("PoosheAndroid")){
     "        @JavascriptInterface",
     "        public boolean setLauncherIconColor(final String color) {",
     "            String key = \"Black\";",
+    "            if (\"#000000\".equalsIgnoreCase(color)) key = \"Black\";",
     "            else if (\"#d6b36b\".equalsIgnoreCase(color)) key = \"Gold\";",
     "            else if (\"#56c4b6\".equalsIgnoreCase(color)) key = \"Teal\";",
     "            else if (\"#82aeea\".equalsIgnoreCase(color)) key = \"Blue\";",
