@@ -188,26 +188,26 @@ fs.writeFileSync(billingFile, billingSource);
 let billingMain = fs.readFileSync(main, "utf8");
 if (!billingMain.includes("CafeBazaarBillingPlugin.class")) {
   if (billingMain.includes("registerPlugin(BackupFolderPlugin.class);")) {
-    billingMain = billingMain.replace("registerPlugin(BackupFolderPlugin.class);", "registerPlugin(BackupFolderPlugin.class);\\n        registerPlugin(CafeBazaarBillingPlugin.class);");
+    billingMain = billingMain.replace("registerPlugin(BackupFolderPlugin.class);", "registerPlugin(BackupFolderPlugin.class);\n        registerPlugin(CafeBazaarBillingPlugin.class);");
   } else {
     const anchor = "super.onCreate(savedInstanceState);";
     if (!billingMain.includes(anchor)) throw new Error("MainActivity onCreate anchor missing for CafeBazaarBillingPlugin");
-    billingMain = billingMain.replace(anchor, "registerPlugin(CafeBazaarBillingPlugin.class);\\n        " + anchor);
+    billingMain = billingMain.replace(anchor, "registerPlugin(CafeBazaarBillingPlugin.class);\n        " + anchor);
   }
   fs.writeFileSync(main, billingMain);
 }
 
 const rootGradleFile = path.join(root, "build.gradle");
 let rootGradle = fs.existsSync(rootGradleFile) ? fs.readFileSync(rootGradleFile, "utf8") :
-  'buildscript {\\n    repositories { google(); mavenCentral(); maven { url "https://jitpack.io" } }\\n    dependencies { classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21" }\\n}\\nallprojects { repositories { google(); mavenCentral(); maven { url "https://jitpack.io" } } }\\n';
+  'buildscript {\n    repositories { google(); mavenCentral(); maven { url "https://jitpack.io" } }\n    dependencies { classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21" }\n}\nallprojects { repositories { google(); mavenCentral(); maven { url "https://jitpack.io" } } }\n';
 if (!rootGradle.includes("https://jitpack.io")) {
-  rootGradle = rootGradle.replace(/repositories\\s*\\{/g, match => match + '\\n        maven { url "https://jitpack.io" }');
+  rootGradle = rootGradle.replace(/repositories\s*\{/g, match => match + '\n        maven { url "https://jitpack.io" }');
 }
 if (!rootGradle.includes("kotlin-gradle-plugin")) {
-  if (/dependencies\\s*\\{/.test(rootGradle)) {
-    rootGradle = rootGradle.replace(/dependencies\\s*\\{/, match => match + '\\n        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21"');
+  if (/dependencies\s*\{/.test(rootGradle)) {
+    rootGradle = rootGradle.replace(/dependencies\s*\{/, match => match + '\n        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21"');
   } else {
-    rootGradle = 'buildscript { repositories { google(); mavenCentral(); maven { url "https://jitpack.io" } } dependencies { classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21" } }\\n' + rootGradle;
+    rootGradle = 'buildscript { repositories { google(); mavenCentral(); maven { url "https://jitpack.io" } } dependencies { classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21" } }\n' + rootGradle;
   }
 }
 fs.writeFileSync(rootGradleFile, rootGradle);
@@ -215,19 +215,19 @@ fs.writeFileSync(rootGradleFile, rootGradle);
 const appGradleFile = path.join(root, "app/build.gradle");
 let appGradle = fs.readFileSync(appGradleFile, "utf8");
 if (!appGradle.includes("kotlin-android")) {
-  const pluginPattern = /apply plugin: ['"]com\\.android\\.application['"]\\s*/;
+  const pluginPattern = /apply plugin: ['"]com\.android\.application['"]\s*/;
   if (!pluginPattern.test(appGradle)) throw new Error("Android application plugin not found in app/build.gradle");
-  appGradle = appGradle.replace(pluginPattern, match => match + "\\napply plugin: 'kotlin-android'\\n");
+  appGradle = appGradle.replace(pluginPattern, match => match + "\napply plugin: 'kotlin-android'\n");
 }
 if (!appGradle.includes("com.github.cafebazaar.Poolakey:poolakey")) {
-  if (/dependencies\\s*\\{/.test(appGradle)) {
-    appGradle = appGradle.replace(/dependencies\\s*\\{/, match => match + '\\n    implementation "com.github.cafebazaar.Poolakey:poolakey:2.1.0"');
+  if (/dependencies\s*\{/.test(appGradle)) {
+    appGradle = appGradle.replace(/dependencies\s*\{/, match => match + '\n    implementation "com.github.cafebazaar.Poolakey:poolakey:2.1.0"');
   } else {
-    appGradle += '\\ndependencies { implementation "com.github.cafebazaar.Poolakey:poolakey:2.1.0" }\\n';
+    appGradle += '\ndependencies { implementation "com.github.cafebazaar.Poolakey:poolakey:2.1.0" }\n';
   }
 }
-if (!/android\\s*\\{[\\s\\S]*?\\bkotlinOptions\\s*\\{/.test(appGradle)) {
-  const match = /android\\s*\\{/.exec(appGradle);
+if (!/android\s*\{[\s\S]*?\bkotlinOptions\s*\{/.test(appGradle)) {
+  const match = /android\s*\{/.exec(appGradle);
   if (!match) throw new Error("android { } block not found in app/build.gradle");
   const open = appGradle.indexOf("{", match.index);
   let depth = 0, close = -1;
@@ -237,7 +237,7 @@ if (!/android\\s*\\{[\\s\\S]*?\\bkotlinOptions\\s*\\{/.test(appGradle)) {
     if (depth === 0) { close = i; break; }
   }
   if (close < 0) throw new Error("Could not find closing android block");
-  appGradle = appGradle.slice(0, close) + '\\n    kotlinOptions { jvmTarget = "21" }\\n' + appGradle.slice(close);
+  appGradle = appGradle.slice(0, close) + '\n    kotlinOptions { jvmTarget = "21" }\n' + appGradle.slice(close);
 }
 fs.writeFileSync(appGradleFile, appGradle);
 
@@ -245,7 +245,7 @@ const bazaarPermission = '    <uses-permission android:name="com.farsitel.bazaar
 if (!fs.readFileSync(manifestPath, "utf8").includes("com.farsitel.bazaar.permission.PAY_THROUGH_BAZAAR")) {
   let manifestText = fs.readFileSync(manifestPath, "utf8");
   if (!manifestText.includes("<application")) throw new Error("AndroidManifest <application> missing for Bazaar permission");
-  manifestText = manifestText.replace("<application", bazaarPermission + "\\n    <application");
+  manifestText = manifestText.replace("<application", bazaarPermission + "\n    <application");
   fs.writeFileSync(manifestPath, manifestText);
 }
 console.log("Configured Cafe Bazaar Poolakey billing bridge for " + pkg);
