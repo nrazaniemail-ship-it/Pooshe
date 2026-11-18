@@ -1,0 +1,35 @@
+name: Build Android APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+concurrency:
+  group: pooshe-android-apk
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - run: python -m pip install Pillow
+      - run: npm install
+      - run: npm run android:add
+      - run: npm run android:configure
+      - run: npm run android:sync
+      - run: cd android && chmod +x gradlew && ./gradlew assembleDebug
+      - name: Rename installable APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/pooshe.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pooshe
+          path: android/app/build/outputs/apk/debug/pooshe.apk
+          if-no-files-found: error
