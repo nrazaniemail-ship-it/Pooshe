@@ -9,6 +9,7 @@ import android.provider.MediaStore;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import com.getcapacitor.*;
+import com.getcapacitor.annotation.CapacitorPlugin;
 
 @CapacitorPlugin(name = "BackupFolder")
 public class BackupFolderPlugin extends Plugin {
