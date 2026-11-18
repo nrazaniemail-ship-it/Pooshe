@@ -54,7 +54,7 @@ function exportSheet(title,headers,rows){
  '<Row>'+headers.map(x=>'<Cell ss:StyleID="Header"><Data ss:Type="String">'+escXml(x)+'</Data></Cell>').join("")+'</Row>'+
  rows.map(r=>'<Row>'+headers.map((_,i)=>cell(Array.isArray(r)?r[i]??"": "")).join("")+'</Row>').join("")+
  '</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><DisplayRightToLeft/><FreezePanes/><FrozenNoSplit/><SplitHorizontal>2</SplitHorizontal><TopRowBottomPane>2</TopRowBottomPane></WorksheetOptions></Worksheet></Workbook>';
- downloadFile("pooshe-report.xls","\\ufeff"+xml,"application/vnd.ms-excel;charset=utf-8");
+ downloadFile("pooshe-report.xls","\uFEFF"+xml,"application/vnd.ms-excel;charset=utf-8");
 }
 
 
