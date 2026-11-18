@@ -244,7 +244,7 @@ public class BackupFolderPlugin extends Plugin {
                                 } catch (Throwable error) {
                                     android.util.Log.e("PooshePDF", "Could not open Android print dialog", error);
                                     call.reject("بازکردن پنجره چاپ اندروید ناموفق بود: " +
-                                        (error.getMessage() == null ? error.getClass().getSimpleName() : error.getMessage()), error);
+                                        (error.getMessage() == null ? error.getClass().getSimpleName() : error.getMessage()));
                                 }
                             }, 900);
                         }
@@ -268,12 +268,12 @@ public class BackupFolderPlugin extends Plugin {
                 } catch (Throwable error) {
                     android.util.Log.e("PooshePDF", "PDF preparation failed", error);
                     call.reject("آماده‌سازی PDF ناموفق بود: " +
-                        (error.getMessage() == null ? error.getClass().getSimpleName() : error.getMessage()), error);
+                        (error.getMessage() == null ? error.getClass().getSimpleName() : error.getMessage()));
                 }
             });
         } catch (Throwable error) {
             call.reject("آماده‌سازی PDF ناموفق بود: " +
-                (error.getMessage() == null ? error.getClass().getSimpleName() : error.getMessage()), error);
+                (error.getMessage() == null ? error.getClass().getSimpleName() : error.getMessage()));
         }
     }
 
