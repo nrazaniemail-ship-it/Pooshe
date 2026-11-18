@@ -29,3 +29,34 @@ test("read-only mode blocks all case mutations and exports", () => {
   const s = evaluateAccess({ now:start + TRIAL_DURATION_MS, trialStartedAt:start });
   for (const action of ["create","update","delete","step","attachment","status","reminder","excel","pdf","print"]) assert.equal(isWriteActionAllowed(s,action),false,action);
 });
+
+import fs from "node:fs";
+const mainSource = fs.readFileSync("src/main.js", "utf8");
+const accessSource = fs.readFileSync("src/access-control.js", "utf8");
+const nativeSource = fs.readFileSync("native/android/CafeBazaarBillingPlugin.kt.tpl", "utf8");
+const androidSetup = fs.readFileSync("scripts/configure-android-backup.mjs", "utf8");
+
+test("all approved Pooshe SKUs are present in JS and native allowlist", () => {
+  for (const sku of ["trial_subscription","pooshe_pro_yearly","pooshe_pro_6_months","pooshe_pro_3_months","pooshe_pro_monthly"]) {
+    assert.ok(accessSource.includes('id: "' + sku + '"'), "JS catalog missing " + sku);
+    assert.ok(nativeSource.includes('"' + sku + '"'), "Native allowlist missing " + sku);
+  }
+});
+test("case mutations, exports and judicial printing have central access guards", () => {
+  for (const token of [
+    'function newCase(){if(!requireWriteAccess',
+    'function caseForm(c){if(!requireWriteAccess',
+    'function stepForm(c,s){if(!requireWriteAccess',
+    'function addStepFiles(c,s,files){if(!requireWriteAccess',
+    'function exportSheet(title,headers,rows){if(!requireWriteAccess',
+    'function printReport(title,headers,rows){if(!requireWriteAccess',
+    'function printJudicialForm(c,s,f,data){if(!requireWriteAccess'
+  ]) assert.ok(mainSource.includes(token), "missing guard: " + token);
+  assert.ok(mainSource.includes("poosheWriteClickSelector"), "event-boundary write guard missing");
+  assert.ok(mainSource.includes("initializeAccessControl(S,save"), "entitlement initialization missing");
+});
+test("native build configuration registers Poolakey plugin and Bazaar permission", () => {
+  assert.ok(androidSetup.includes("CafeBazaarBillingPlugin.class"));
+  assert.ok(androidSetup.includes("poolakey:2.1.0"));
+  assert.ok(androidSetup.includes("PAY_THROUGH_BAZAAR"));
+});
