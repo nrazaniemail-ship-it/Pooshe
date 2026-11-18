@@ -164,26 +164,18 @@ public class BackupFolderPlugin extends Plugin {
             call.reject("محتوای چاپ خالی است");
             return;
         }
-        final FrameLayout decor = (FrameLayout) getActivity().getWindow().getDecorView();
-        final WebView webView = new WebView(getContext());
-        final File tempFile;
         final String fileName;
         try {
-            ensureFolder();
             fileName = uniqueFileName(requestedName);
-            tempFile = File.createTempFile("pooshe-print-", ".pdf", getContext().getCacheDir());
-            String printableHtml = html.replace("</head>",
-                "<style>html,body{background:#fff!important}.report-actions,.report-preview-toolbar,.judicial-actions,.form-actions,button{display:none!important}</style></head>");
+            final FrameLayout decor = (FrameLayout) getActivity().getWindow().getDecorView();
+            final WebView webView = new WebView(getContext());
             webView.setBackgroundColor(Color.WHITE);
-            webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-            webView.setVerticalScrollBarEnabled(false);
-            webView.setHorizontalScrollBarEnabled(false);
             webView.getSettings().setJavaScriptEnabled(true);
             webView.getSettings().setDefaultTextEncodingName("UTF-8");
+            webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
             decor.addView(webView, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             webView.setAlpha(0f);
-
             webView.setWebViewClient(new WebViewClient() {
                 private boolean started = false;
                 @Override public void onPageFinished(WebView view, String url) {
@@ -191,94 +183,37 @@ public class BackupFolderPlugin extends Plugin {
                     started = true;
                     view.post(() -> {
                         try {
-                            PrintDocumentAdapter adapter = view.createPrintDocumentAdapter(fileName);
-                            PrintAttributes attributes = new PrintAttributes.Builder()
+                            String printName = fileName.endsWith(".pdf")
+                                ? fileName.substring(0, fileName.length() - 4) : fileName;
+                            PrintDocumentAdapter adapter = view.createPrintDocumentAdapter(printName);
+                            PrintAttributes attrs = new PrintAttributes.Builder()
                                 .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
                                 .setResolution(new PrintAttributes.Resolution("pooshe", "Pooshe", 300, 300))
                                 .setMinMargins(new PrintAttributes.Margins(0, 0, 0, 0))
                                 .build();
-                            adapter.onLayout(null, attributes, new CancellationSignal(),
-                                new PrintDocumentAdapter.LayoutResultCallback() {
-                                    @Override public void onLayoutFinished(PrintDocumentInfo info, boolean changed) {
-                                        ParcelFileDescriptor descriptor = null;
-                                        try {
-                                            descriptor = ParcelFileDescriptor.open(tempFile,
-                                                ParcelFileDescriptor.MODE_CREATE |
-                                                ParcelFileDescriptor.MODE_READ_WRITE |
-                                                ParcelFileDescriptor.MODE_TRUNCATE);
-                                            final ParcelFileDescriptor output = descriptor;
-                                            adapter.onWrite(new PageRange[]{PageRange.ALL_PAGES}, output,
-                                                new CancellationSignal(),
-                                                new PrintDocumentAdapter.WriteResultCallback() {
-                                                    private boolean completed = false;
-                                                    private void finishFailure(String message) {
-                                                        if (completed) return;
-                                                        completed = true;
-                                                        cleanupPdfView(view, decor, adapter, tempFile);
-                                                        call.reject("تولید PDF ناموفق بود: " + message);
-                                                    }
-                                                    @Override public void onWriteFinished(PageRange[] pages) {
-                                                        if (completed) return;
-                                                        completed = true;
-                                                        try {
-                                                            output.close();
-                                                            byte[] bytes = new byte[(int)tempFile.length()];
-                                                            try (FileInputStream input = new FileInputStream(tempFile)) {
-                                                                int offset = 0, count;
-                                                                while (offset < bytes.length &&
-                                                                    (count = input.read(bytes, offset, bytes.length - offset)) > 0) offset += count;
-                                                                if (offset != bytes.length) throw new IllegalStateException("خواندن فایل PDF کامل نشد");
-                                                            }
-                                                            if (bytes.length < 500 ||
-                                                                bytes[0] != '%' || bytes[1] != 'P' || bytes[2] != 'D' || bytes[3] != 'F')
-                                                                throw new IllegalStateException("فایل PDF خروجی معتبر نیست");
-                                                            saveBytes(fileName, "application/pdf", bytes);
-                                                            JSObject result = new JSObject();
-                                                            result.put("saved", true);
-                                                            result.put("fileName", fileName);
-                                                            result.put("folder", "Download/pooshe backups");
-                                                            result.put("format", "A4");
-                                                            result.put("bytes", bytes.length);
-                                                            cleanupPdfView(view, decor, adapter, tempFile);
-                                                            call.resolve(result);
-                                                        } catch (Exception e) {
-                                                            cleanupPdfView(view, decor, adapter, tempFile);
-                                                            call.reject("ذخیره PDF ناموفق بود: " + e.getMessage(), e);
-                                                        }
-                                                    }
-                                                    @Override public void onWriteFailed(CharSequence error) {
-                                                        finishFailure(error == null ? "خطای چاپ اندروید" : error.toString());
-                                                    }
-                                                    @Override public void onWriteCancelled() {
-                                                        finishFailure("عملیات چاپ لغو شد");
-                                                    }
-                                                });
-                                        } catch (Exception e) {
-                                            try { if (descriptor != null) descriptor.close(); } catch (Exception ignored) { }
-                                            cleanupPdfView(view, decor, adapter, tempFile);
-                                            call.reject("آماده‌سازی خروجی PDF ناموفق بود: " + e.getMessage(), e);
-                                        }
-                                    }
-                                    @Override public void onLayoutFailed(CharSequence error) {
-                                        cleanupPdfView(view, decor, adapter, tempFile);
-                                        call.reject("صفحه‌بندی PDF ناموفق بود: " + (error == null ? "" : error.toString()));
-                                    }
-                                    @Override public void onLayoutCancelled() {
-                                        cleanupPdfView(view, decor, adapter, tempFile);
-                                        call.reject("صفحه‌بندی PDF لغو شد");
-                                    }
-                                }, null);
+                            android.print.PrintManager manager =
+                                (android.print.PrintManager) getContext().getSystemService(android.content.Context.PRINT_SERVICE);
+                            if (manager == null) throw new IllegalStateException("سرویس چاپ اندروید در دسترس نیست");
+                            manager.print(printName, adapter, attrs);
+                            JSObject result = new JSObject();
+                            result.put("saved", false);
+                            result.put("printDialogOpened", true);
+                            result.put("fileName", fileName);
+                            result.put("message", "از پنجره چاپ اندروید گزینه Save as PDF را انتخاب کنید");
+                            call.resolve(result);
                         } catch (Exception e) {
-                            cleanupPdfView(view, decor, null, tempFile);
-                            call.reject("شروع تولید PDF ناموفق بود: " + e.getMessage(), e);
+                            try { decor.removeView(view); view.destroy(); } catch (Exception ignored) { }
+                            call.reject("بازکردن پنجره چاپ PDF ناموفق بود: " + e.getMessage(), e);
                         }
                     });
                 }
             });
+            String printableHtml = html.replace("</head>",
+                "<style>html,body{background:#fff!important}.report-actions,.report-preview-toolbar,.judicial-actions,.form-actions,button{display:none!important}</style></head>");
             webView.loadDataWithBaseURL("https://localhost/", printableHtml, "text/html", "UTF-8", null);
         } catch (Exception e) {
-            cleanupPdfView(webView, decor, null, null);
-            call.reject("آماده‌سازی PDF ناموفق بود: " + e.getMessage(), e);
+            call.reject("آماده‌سازی چاپ PDF ناموفق بود: " + e.getMessage(), e);
         }
     }
+
 }
