@@ -51,13 +51,28 @@ public class BackupFolderPlugin extends Plugin {
 
     private boolean fileNameExists(String fileName) throws Exception {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            String[] projection = { MediaStore.MediaColumns._ID };
-            String selection = MediaStore.MediaColumns.RELATIVE_PATH + "=? AND " + MediaStore.MediaColumns.DISPLAY_NAME + "=?";
+            String[] projection = {
+                MediaStore.MediaColumns.DISPLAY_NAME,
+                MediaStore.MediaColumns.RELATIVE_PATH
+            };
+            String wantedPath = RELATIVE_DIR.replaceAll("^/+|/+$", "");
             try (android.database.Cursor cursor = getContext().getContentResolver().query(
-                    MediaStore.Downloads.EXTERNAL_CONTENT_URI, projection, selection,
-                    new String[]{RELATIVE_DIR, fileName}, null)) {
-                return cursor != null && cursor.moveToFirst();
+                    MediaStore.Downloads.EXTERNAL_CONTENT_URI, projection, null, null, null)) {
+                if (cursor != null) {
+                    int nameColumn = cursor.getColumnIndex(MediaStore.MediaColumns.DISPLAY_NAME);
+                    int pathColumn = cursor.getColumnIndex(MediaStore.MediaColumns.RELATIVE_PATH);
+                    while (cursor.moveToNext()) {
+                        String existingName = nameColumn >= 0 ? cursor.getString(nameColumn) : null;
+                        String existingPath = pathColumn >= 0 ? cursor.getString(pathColumn) : null;
+                        String normalizedPath = existingPath == null ? "" : existingPath.replaceAll("^/+|/+$", "");
+                        if (wantedPath.equalsIgnoreCase(normalizedPath)
+                                && fileName.equalsIgnoreCase(existingName == null ? "" : existingName)) {
+                            return true;
+                        }
+                    }
+                }
             }
+            return false;
         }
         File dir = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "pooshe backups");
         return new File(dir, fileName).exists();
@@ -150,10 +165,8 @@ public class BackupFolderPlugin extends Plugin {
         }
     }
 
-    private void cleanupPdfView(WebView view, FrameLayout decor, PrintDocumentAdapter adapter, File tempFile) {
-        try { if (adapter != null) adapter.onFinish(); } catch (Exception ignored) { }
-        try { if (view != null) { decor.removeView(view); view.destroy(); } } catch (Exception ignored) { }
-        try { if (tempFile != null && tempFile.exists()) tempFile.delete(); } catch (Exception ignored) { }
+    private void cleanupPdfView(WebView view) {
+        try { if (view != null) view.destroy(); } catch (Exception ignored) { }
     }
 
     @PluginMethod
@@ -167,52 +180,76 @@ public class BackupFolderPlugin extends Plugin {
         final String fileName;
         try {
             fileName = uniqueFileName(requestedName);
-            final FrameLayout decor = (FrameLayout) getActivity().getWindow().getDecorView();
-            final WebView webView = new WebView(getContext());
-            webView.setBackgroundColor(Color.WHITE);
-            webView.getSettings().setJavaScriptEnabled(true);
-            webView.getSettings().setDefaultTextEncodingName("UTF-8");
-            webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-            decor.addView(webView, new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-            webView.setAlpha(0f);
-            webView.setWebViewClient(new WebViewClient() {
-                private boolean started = false;
-                @Override public void onPageFinished(WebView view, String url) {
-                    if (started) return;
-                    started = true;
-                    view.post(() -> {
-                        try {
-                            String printName = fileName.endsWith(".pdf")
-                                ? fileName.substring(0, fileName.length() - 4) : fileName;
-                            PrintDocumentAdapter adapter = view.createPrintDocumentAdapter(printName);
-                            PrintAttributes attrs = new PrintAttributes.Builder()
-                                .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
-                                .setResolution(new PrintAttributes.Resolution("pooshe", "Pooshe", 300, 300))
-                                .setMinMargins(new PrintAttributes.Margins(0, 0, 0, 0))
-                                .build();
-                            android.print.PrintManager manager =
-                                (android.print.PrintManager) getContext().getSystemService(android.content.Context.PRINT_SERVICE);
-                            if (manager == null) throw new IllegalStateException("سرویس چاپ اندروید در دسترس نیست");
-                            manager.print(printName, adapter, attrs);
-                            JSObject result = new JSObject();
-                            result.put("saved", false);
-                            result.put("printDialogOpened", true);
-                            result.put("fileName", fileName);
-                            result.put("message", "از پنجره چاپ اندروید گزینه Save as PDF را انتخاب کنید");
-                            call.resolve(result);
-                        } catch (Exception e) {
-                            try { decor.removeView(view); view.destroy(); } catch (Exception ignored) { }
-                            call.reject("بازکردن پنجره چاپ PDF ناموفق بود: " + e.getMessage(), e);
-                        }
-                    });
-                }
+            final android.app.Activity activity = getActivity();
+            if (activity == null) throw new IllegalStateException("صفحه فعال برنامه در دسترس نیست");
+            activity.runOnUiThread(() -> {
+                final WebView webView = new WebView(activity);
+                webView.setBackgroundColor(Color.WHITE);
+                webView.getSettings().setJavaScriptEnabled(false);
+                webView.getSettings().setDefaultTextEncodingName("UTF-8");
+                webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+                webView.setWebViewClient(new WebViewClient() {
+                    private boolean completed = false;
+
+                    @Override public void onPageFinished(WebView view, String url) {
+                        if (completed) return;
+                        completed = true;
+                        view.post(() -> {
+                            try {
+                                final int pageWidth = 595;
+                                final int pageHeight = 842;
+                                view.measure(
+                                    View.MeasureSpec.makeMeasureSpec(pageWidth, View.MeasureSpec.EXACTLY),
+                                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                                );
+                                int contentHeight = Math.max(
+                                    view.getMeasuredHeight(),
+                                    (int) Math.ceil(view.getContentHeight() * view.getScale())
+                                );
+                                if (contentHeight <= 0) throw new IllegalStateException("محتوای گزارش قابل تبدیل به PDF نیست");
+                                view.layout(0, 0, pageWidth, contentHeight);
+
+                                PdfDocument pdf = new PdfDocument();
+                                int pageCount = Math.max(1, (contentHeight + pageHeight - 1) / pageHeight);
+                                for (int pageNumber = 0; pageNumber < pageCount; pageNumber++) {
+                                    PdfDocument.PageInfo info = new PdfDocument.PageInfo.Builder(
+                                        pageWidth, pageHeight, pageNumber + 1
+                                    ).create();
+                                    PdfDocument.Page page = pdf.startPage(info);
+                                    android.graphics.Canvas canvas = page.getCanvas();
+                                    canvas.save();
+                                    canvas.clipRect(0, 0, pageWidth, pageHeight);
+                                    canvas.translate(0, -pageNumber * pageHeight);
+                                    view.draw(canvas);
+                                    canvas.restore();
+                                    pdf.finishPage(page);
+                                }
+
+                                ByteArrayOutputStream output = new ByteArrayOutputStream();
+                                pdf.writeTo(output);
+                                pdf.close();
+                                saveBytes(fileName, "application/pdf", output.toByteArray());
+                                cleanupPdfView(view);
+
+                                JSObject result = new JSObject();
+                                result.put("saved", true);
+                                result.put("printDialogOpened", false);
+                                result.put("fileName", fileName);
+                                result.put("folder", "Download/pooshe backups");
+                                call.resolve(result);
+                            } catch (Exception e) {
+                                cleanupPdfView(view);
+                                call.reject("ساخت یا ذخیره PDF ناموفق بود: " + e.getMessage(), e);
+                            }
+                        });
+                    }
+                });
+                String printableHtml = html.replace("</head>",
+                    "<style>html,body{background:#fff!important}.report-actions,.report-preview-toolbar,.judicial-actions,.form-actions,button{display:none!important}body{margin:24px}</style></head>");
+                webView.loadDataWithBaseURL("https://localhost/", printableHtml, "text/html", "UTF-8", null);
             });
-            String printableHtml = html.replace("</head>",
-                "<style>html,body{background:#fff!important}.report-actions,.report-preview-toolbar,.judicial-actions,.form-actions,button{display:none!important}</style></head>");
-            webView.loadDataWithBaseURL("https://localhost/", printableHtml, "text/html", "UTF-8", null);
         } catch (Exception e) {
-            call.reject("آماده‌سازی چاپ PDF ناموفق بود: " + e.getMessage(), e);
+            call.reject("آماده‌سازی PDF ناموفق بود: " + e.getMessage(), e);
         }
     }
 
