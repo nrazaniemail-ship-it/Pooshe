@@ -235,8 +235,13 @@ public class BackupFolderPlugin extends Plugin {
                         value -> {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                                 view.postVisualStateCallback(System.nanoTime(),
-                                    requestId -> view.post(() -> renderPdf(call, view, decor,
-                                        fileName, widthPx, pageHeightPx, dpi, value)));
+                                    new WebView.VisualStateCallback() {
+                                        @Override
+                                        public void onComplete(long requestId) {
+                                            view.post(() -> renderPdf(call, view, decor,
+                                                fileName, widthPx, pageHeightPx, dpi, value));
+                                        }
+                                    });
                             } else {
                                 view.post(() -> renderPdf(call, view, decor,
                                     fileName, widthPx, pageHeightPx, dpi, value));
