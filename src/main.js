@@ -27,7 +27,7 @@ async function downloadFile(name,content,mime){
   try{
    const result=await BackupFolder.saveFile({fileName:name,content,mimeType:mime});
    if(result?.saved===false)throw new Error("ذخیره فایل تأیید نشد");
-   toast("فایل در Download/pooshe backups ذخیره شد");
+   toast("ذخیره فایل موفق بود");
    return;
   }catch(e){console.error("File export failed",e);alert("ذخیره فایل ناموفق بود: "+(e.message||e));return}
  }
@@ -35,7 +35,7 @@ async function downloadFile(name,content,mime){
  a.href=url;a.download=name;a.rel="noopener";
  document.body.appendChild(a);a.click();a.remove();
  setTimeout(()=>URL.revokeObjectURL(url),60000);
- toast("دانلود فایل آغاز شد");
+ toast("ذخیره فایل موفق بود");
 }
 function exportSheet(title,headers,rows){
  const profile=lawyerProfile();
@@ -69,7 +69,7 @@ function printReport(title,headers,rows){
  const cell=v=>String(v??"—").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
  const html='<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><title>'+cell(title)+'</title><style>body{font-family:Tahoma,sans-serif;color:#111;background:#fff;margin:24px}h2{font-size:19px;margin:0 0 14px}p{font-size:12px}table{width:100%;border-collapse:collapse;margin-top:18px}th,td{border:1px solid #aeb7c2;padding:8px;text-align:right;font-size:11px;vertical-align:top}th{background:#e8edf3;font-weight:800}.report-actions{display:flex;gap:8px;margin:16px 0}.report-actions button{padding:10px 18px;border:0;border-radius:8px;background:#183c48;color:white;font-weight:700}@page{size:A4 portrait;margin:12mm}@media print{.report-actions{display:none}body{margin:0}}</style></head><body><div class="print-brand" style="display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #243f4a;padding-bottom:10px;margin-bottom:16px"><div style="display:flex;align-items:center;gap:10px"><img src="./pooshe-icon.png?v=6" alt="نشان پوشه" style="width:42px;height:42px;object-fit:contain"><div><b>پوشه</b><div style="font-size:10px">دستیار مدیریت پرونده‌های حقوقی</div></div></div><div style="text-align:left;font-size:11px">'+cell(lawyerReportHeading())+(lawyerProfile().license?'<br>شماره پروانه وکالت: '+cell(lawyerProfile().license):"")+'<br><b>پیش‌نویس داخلی — غیررسمی</b></div></div><div style="text-align:center;font-size:13px;margin:10px 0">بسمه تعالی</div><h2>'+cell(title)+'</h2><p>تاریخ تهیه: '+new Date().toLocaleDateString("fa-IR")+'</p><table><thead><tr>'+headers.map(x=>'<th>'+cell(x)+'</th>').join("")+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(x=>'<td>'+cell(x)+'</td>').join("")+'</tr>').join("")+'</tbody></table></body></html>';
  if(Capacitor.isNativePlatform()){
-  try{openNativePrint(html,"pooshe-report-"+Date.now());toast("پنجره چاپ اندروید باز شد؛ گزینه Save as PDF را انتخاب کنید");}
+  try{openNativePrint(html,"pooshe-report-"+Date.now());toast("چاپ / ذخیره PDF موفق بود");}
   catch(e){console.error("Native PDF print failed",e);alert("چاپ / ذخیره PDF ناموفق بود: "+(e.message||e))}
   return;
  }
@@ -77,7 +77,7 @@ function printReport(title,headers,rows){
  const modalRoot=$("#modal");if(!modalRoot)return;
  modalRoot.innerHTML='<div class="report-preview-backdrop"><section class="report-preview" role="dialog" aria-label="پیش‌نمایش گزارش PDF"><div class="report-preview-toolbar"><b>پیش‌نمایش PDF</b><div><button type="button" id="printReportNow">چاپ / ذخیره PDF</button><button type="button" id="closeReportPreview">بازگشت</button></div></div><iframe title="پیش‌نمایش گزارش PDF"></iframe></section></div>';
  const frame=modalRoot.querySelector("iframe"),doc=frame.contentDocument;doc.open();doc.write(html);doc.close();
- $("#printReportNow").onclick=async()=>{const button=$("#printReportNow"),label=button.textContent;button.disabled=true;button.textContent="در حال آماده‌سازی PDF...";try{if(Capacitor.isNativePlatform()){const name="pooshe-report-"+Date.now();openNativePrint(html,name);reportPreview=false;modalRoot.innerHTML="";history.replaceState(routeState(),"");toast("پنجره چاپ اندروید باز شد؛ گزینه Save as PDF را انتخاب کنید");}else{frame.contentWindow.focus();frame.contentWindow.print();}}catch(e){console.error("PDF export failed",e);alert("چاپ / ذخیره PDF ناموفق بود: "+(e.message||e))}finally{button.disabled=false;button.textContent=label}};
+ $("#printReportNow").onclick=async()=>{const button=$("#printReportNow"),label=button.textContent;button.disabled=true;button.textContent="در حال آماده‌سازی PDF...";try{if(Capacitor.isNativePlatform()){const name="pooshe-report-"+Date.now();openNativePrint(html,name);reportPreview=false;modalRoot.innerHTML="";history.replaceState(routeState(),"");toast("چاپ / ذخیره PDF موفق بود");}else{frame.contentWindow.focus();frame.contentWindow.print();}}catch(e){console.error("PDF export failed",e);alert("چاپ / ذخیره PDF ناموفق بود: "+(e.message||e))}finally{button.disabled=false;button.textContent=label}};
  $("#closeReportPreview").onclick=()=>{if(history.state?.reportPreview)history.back();else{reportPreview=false;modalRoot.innerHTML=""}};
 }
 
@@ -157,7 +157,7 @@ function printJudicialForm(c,s,f,data){
  const modalRoot=$("#modal");if(!modalRoot)return;
  modalRoot.innerHTML='<div class="report-preview-backdrop"><section class="report-preview" role="dialog" aria-label="پیش‌نمایش فرم قضایی"><div class="report-preview-toolbar"><b>پیش‌نمایش '+title+'</b><div><button type="button" id="printJudicialNow">چاپ / ذخیره PDF</button><button type="button" id="closeJudicialPreview">بازگشت</button></div></div><iframe title="پیش‌نمایش فرم قضایی"></iframe></section></div>';
  const frame=modalRoot.querySelector("iframe"),doc=frame.contentDocument;doc.open();doc.write(html);doc.close();
- $("#printJudicialNow").onclick=async()=>{const button=$("#printJudicialNow"),label=button.textContent;button.disabled=true;button.textContent="در حال آماده‌سازی PDF...";try{if(Capacitor.isNativePlatform()){const safeTitle=title==="شکواییه"?"complaint":"petition";const name="pooshe-"+safeTitle+"-"+Date.now();openNativePrint(html,name);toast("پنجره چاپ اندروید باز شد؛ گزینه Save as PDF را انتخاب کنید");}else{frame.contentWindow.focus();frame.contentWindow.print();}}catch(e){console.error("Judicial PDF export failed",e);alert("چاپ / ذخیره PDF ناموفق بود: "+(e.message||e))}finally{button.disabled=false;button.textContent=label}};
+ $("#printJudicialNow").onclick=async()=>{const button=$("#printJudicialNow"),label=button.textContent;button.disabled=true;button.textContent="در حال آماده‌سازی PDF...";try{if(Capacitor.isNativePlatform()){const safeTitle=title==="شکواییه"?"complaint":"petition";const name="pooshe-"+safeTitle+"-"+Date.now();openNativePrint(html,name);toast("چاپ / ذخیره PDF موفق بود");}else{frame.contentWindow.focus();frame.contentWindow.print();}}catch(e){console.error("Judicial PDF export failed",e);alert("چاپ / ذخیره PDF ناموفق بود: "+(e.message||e))}finally{button.disabled=false;button.textContent=label}};
  $("#closeJudicialPreview").onclick=()=>{modalRoot.innerHTML="";structuredForm(c,s,f)};
 }
 function structuredForm(c,s,f){
