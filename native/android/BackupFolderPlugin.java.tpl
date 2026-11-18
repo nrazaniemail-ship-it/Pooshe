@@ -53,22 +53,17 @@ public class BackupFolderPlugin extends Plugin {
 
     private boolean fileNameExists(String fileName) throws Exception {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            String[] projection = {
-                MediaStore.MediaColumns.DISPLAY_NAME,
-                MediaStore.MediaColumns.RELATIVE_PATH
-            };
-            String wantedPath = RELATIVE_DIR.replaceAll("^/+|/+$", "");
+            // Query Downloads by DISPLAY_NAME. Some Android providers return a null or
+            // inconsistent RELATIVE_PATH for app-created entries; filtering by that
+            // column can miss duplicates and let the provider append "(1)" after ".xls".
+            String[] projection = { MediaStore.MediaColumns.DISPLAY_NAME };
             try (android.database.Cursor cursor = getContext().getContentResolver().query(
                     MediaStore.Downloads.EXTERNAL_CONTENT_URI, projection, null, null, null)) {
                 if (cursor != null) {
                     int nameColumn = cursor.getColumnIndex(MediaStore.MediaColumns.DISPLAY_NAME);
-                    int pathColumn = cursor.getColumnIndex(MediaStore.MediaColumns.RELATIVE_PATH);
                     while (cursor.moveToNext()) {
                         String existingName = nameColumn >= 0 ? cursor.getString(nameColumn) : null;
-                        String existingPath = pathColumn >= 0 ? cursor.getString(pathColumn) : null;
-                        String normalizedPath = existingPath == null ? "" : existingPath.replaceAll("^/+|/+$", "");
-                        if (wantedPath.equalsIgnoreCase(normalizedPath)
-                                && fileName.equalsIgnoreCase(existingName == null ? "" : existingName)) {
+                        if (fileName.equalsIgnoreCase(existingName == null ? "" : existingName.trim())) {
                             return true;
                         }
                     }
@@ -200,11 +195,16 @@ public class BackupFolderPlugin extends Plugin {
                 final java.util.concurrent.atomic.AtomicBoolean completed = new java.util.concurrent.atomic.AtomicBoolean(false);
                 final java.util.concurrent.atomic.AtomicBoolean printStarted = new java.util.concurrent.atomic.AtomicBoolean(false);
 
+                // Attach the print WebView to the Activity window. A view positioned
+                // far off-screen can finish loading but produce an empty Android print preview.
                 FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
-                    595, ViewGroup.LayoutParams.WRAP_CONTENT
+                    ViewGroup.LayoutParams.MATCH_PARENT, 1,
+                    android.view.Gravity.BOTTOM
                 );
-                params.leftMargin = -10000;
                 activity.addContentView(webView, params);
+                webView.setAlpha(0.01f);
+                webView.setClickable(false);
+                webView.setFocusable(false);
 
                 Runnable loadTimeout = () -> {
                     if (completed.compareAndSet(false, true)) {
