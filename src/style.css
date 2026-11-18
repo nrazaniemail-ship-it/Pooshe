@@ -602,3 +602,5 @@ header{position:sticky}
 @media(max-width:420px){.color-palette{grid-template-columns:repeat(6,minmax(25px,1fr));gap:10px}.color-swatch{width:26px;height:26px;min-width:26px}}
 
 .subscription-panel{border:1px solid var(--line);border-radius:16px;padding:16px;margin:16px 0;background:var(--panel)}.subscription-panel h3{margin-top:0}.subscription-plans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}.subscription-plans button{min-height:44px}.subscription-actions{margin:8px 0}@media(max-width:420px){.subscription-plans{grid-template-columns:1fr}}
+
+.readonly-banner{margin:8px 14px 0;padding:10px 14px;border:1px solid var(--line);border-radius:10px;color:var(--muted);font-size:13px;text-align:center}.subscription-panel{border:1px solid var(--line);border-radius:16px;padding:16px;margin:16px 0;background:var(--panel)}.subscription-panel h3{margin-top:0}.subscription-plans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}.subscription-plans button{min-height:44px}.subscription-actions{margin:8px 0}@media(max-width:420px){.subscription-plans{grid-template-columns:1fr}}
