@@ -24,7 +24,10 @@ jobs:
       - run: npm install
       - run: npm run android:add
       - run: npm run android:configure
-      - run: npm run android:sync
+      - name: Build web app and sync Capacitor
+        env:
+          VITE_BAZAAR_RSA_PUBLIC_KEY: ${{ vars.VITE_BAZAAR_RSA_PUBLIC_KEY }}
+        run: npm run android:sync
       - run: cd android && chmod +x gradlew && ./gradlew assembleDebug
       - name: Rename installable APK
         run: cp android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/pooshe.apk
