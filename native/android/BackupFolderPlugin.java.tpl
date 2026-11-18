@@ -171,6 +171,18 @@ public class BackupFolderPlugin extends Plugin {
         }
     }
 
+    private void cleanupPdfView(WebView view) {
+        try {
+            if (view != null) {
+                if (view.getParent() instanceof android.view.ViewGroup) {
+                    ((android.view.ViewGroup) view.getParent()).removeView(view);
+                }
+                view.stopLoading();
+                view.destroy();
+            }
+        } catch (Exception ignored) { }
+    }
+
     // Keep the print WebView alive while Android's print UI is visible.
     private WebView printWebView;
 
