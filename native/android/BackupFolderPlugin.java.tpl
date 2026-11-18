@@ -53,19 +53,26 @@ public class BackupFolderPlugin extends Plugin {
 
     private boolean fileNameExists(String fileName) throws Exception {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            // Query Downloads by DISPLAY_NAME. Some Android providers return a null or
-            // inconsistent RELATIVE_PATH for app-created entries; filtering by that
-            // column can miss duplicates and let the provider append "(1)" after ".xls".
-            String[] projection = { MediaStore.MediaColumns.DISPLAY_NAME };
+            // Search the complete external MediaStore rather than only Downloads.
+            // Android providers can expose app-created Download entries through Files
+            // while omitting them from the Downloads collection query.
+            String[] projection = {
+                MediaStore.MediaColumns.DISPLAY_NAME,
+                MediaStore.MediaColumns.RELATIVE_PATH
+            };
+            Uri filesUri = MediaStore.Files.getContentUri("external");
             try (android.database.Cursor cursor = getContext().getContentResolver().query(
-                    MediaStore.Downloads.EXTERNAL_CONTENT_URI, projection, null, null, null)) {
+                    filesUri, projection, null, null, null)) {
                 if (cursor != null) {
                     int nameColumn = cursor.getColumnIndex(MediaStore.MediaColumns.DISPLAY_NAME);
+                    int pathColumn = cursor.getColumnIndex(MediaStore.MediaColumns.RELATIVE_PATH);
                     while (cursor.moveToNext()) {
                         String existingName = nameColumn >= 0 ? cursor.getString(nameColumn) : null;
-                        if (fileName.equalsIgnoreCase(existingName == null ? "" : existingName.trim())) {
-                            return true;
-                        }
+                        if (!fileName.equalsIgnoreCase(existingName == null ? "" : existingName.trim())) continue;
+                        String existingPath = pathColumn >= 0 ? cursor.getString(pathColumn) : null;
+                        // A null path is treated conservatively as a collision to prevent
+                        // Android from silently appending "(1)" after the extension.
+                        if (existingPath == null || RELATIVE_DIR.equalsIgnoreCase(existingPath)) return true;
                     }
                 }
             }
