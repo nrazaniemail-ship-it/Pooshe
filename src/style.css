@@ -593,3 +593,10 @@ header{position:sticky}
 .lawyer-profile-section input{direction:rtl;text-align:right}
 .layer-title-group .lawyer-license{display:inline-block;margin-top:4px;color:var(--muted);font-size:10px}
 @media(max-width:650px){.layer-title-group .lawyer-license{font-size:9px}}
+
+/* Circular 24-color palettes */
+.color-setting{display:flex;flex-direction:column;align-items:stretch;gap:10px}
+.color-palette{display:grid;grid-template-columns:repeat(8,minmax(25px,1fr));gap:9px;padding:4px 2px}
+.color-swatch{width:27px;height:27px;min-width:27px;padding:0;border:2px solid var(--line);border-radius:50%;background:var(--swatch);box-shadow:0 1px 3px #0003;justify-self:center}
+.color-swatch.selected{outline:2px solid var(--accent);outline-offset:3px;border-color:#fff;transform:scale(1.08)}
+@media(max-width:420px){.color-palette{grid-template-columns:repeat(6,minmax(25px,1fr));gap:10px}.color-swatch{width:26px;height:26px;min-width:26px}}
