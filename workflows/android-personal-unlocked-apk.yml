@@ -35,8 +35,12 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Install image tooling required by Android configuration
-        run: python -m pip install --disable-pip-version-check Pillow
+      - name: Install and verify image tooling required by Android configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check --user Pillow
+          python3 -c "from PIL import Image; print('Pillow ready:', Image.__version__)"
 
       - name: Configure Android SDK
         shell: bash
