@@ -1,0 +1,183 @@
+name: Pooshe Signed Release APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Choose the workflow action"
+        required: true
+        type: choice
+        options:
+          - generate-key
+          - build-release
+        default: generate-key
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pooshe-signed-release
+  cancel-in-progress: false
+
+jobs:
+  generate-signing-key:
+    name: Generate Signing Key Once
+    if: inputs.action == 'generate-key'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - name: Validate signing password and alias
+        shell: bash
+        env:
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          test -n "$KEY_PASSWORD" || { echo "Missing ANDROID_KEYSTORE_PASSWORD secret"; exit 1; }
+          test -n "$KEY_ALIAS" || { echo "Missing ANDROID_KEY_ALIAS secret"; exit 1; }
+
+      - name: Generate PKCS12 signing keystore
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          keytool -genkeypair \
+            -keystore "$RUNNER_TEMP/pooshe-release.p12" \
+            -storetype PKCS12 \
+            -storepass:env ANDROID_KEYSTORE_PASSWORD \
+            -keypass:env ANDROID_KEYSTORE_PASSWORD \
+            -alias "$ANDROID_KEY_ALIAS" \
+            -keyalg RSA \
+            -keysize 3072 \
+            -validity 10000 \
+            -dname "CN=Pooshe Android Release, O=Pooshe"
+          base64 -w 0 "$RUNNER_TEMP/pooshe-release.p12" > "$RUNNER_TEMP/keystore-base64.txt"
+          test -s "$RUNNER_TEMP/keystore-base64.txt"
+
+      - name: Upload temporary keystore transfer file
+        uses: actions/upload-artifact@v4
+        with:
+          name: pooshe-signing-key-base64
+          path: ${{ runner.temp }}/keystore-base64.txt
+          if-no-files-found: error
+          retention-days: 1
+
+  build-release:
+    name: Build and Sign Pooshe APK
+    if: inputs.action == 'build-release'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Configure Android SDK
+        shell: bash
+        run: |
+          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> "$GITHUB_ENV"
+          echo "/usr/local/lib/android/sdk/platform-tools" >> "$GITHUB_PATH"
+          echo "/usr/local/lib/android/sdk/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+
+      - name: Accept Android licenses and install SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
+          fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run tests
+        run: npm test
+
+      - name: Generate Android project
+        run: npm run android:add
+
+      - name: Configure Android project
+        run: npm run android:configure
+
+      - name: Build web app and sync Capacitor
+        run: npm run android:sync
+
+      - name: Build unsigned Release APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd android
+          chmod +x gradlew
+          ./gradlew --no-daemon --stacktrace assembleRelease
+
+      - name: Restore signing keystore
+        shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_BASE64" || { echo "Missing ANDROID_KEYSTORE_BASE64 secret"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/pooshe-signing"
+          chmod 700 "$RUNNER_TEMP/pooshe-signing"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/pooshe-signing/pooshe-release.p12"
+          chmod 600 "$RUNNER_TEMP/pooshe-signing/pooshe-release.p12"
+          test -s "$RUNNER_TEMP/pooshe-signing/pooshe-release.p12"
+
+      - name: Sign and verify Release APK
+        shell: bash
+        env:
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          test -n "$STORE_PASSWORD"
+          test -n "$KEY_ALIAS"
+          VERSION="$(node -p "require('./package.json').version")"
+          UNSIGNED_APK="android/app/build/outputs/apk/release/app-release-unsigned.apk"
+          SIGNED_APK="android/app/build/outputs/apk/release/Pooshe-${VERSION}-release.apk"
+          APK_SIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          KEYSTORE="$RUNNER_TEMP/pooshe-signing/pooshe-release.p12"
+          test -f "$UNSIGNED_APK"
+          test -x "$APK_SIGNER"
+          "$APK_SIGNER" sign --ks "$KEYSTORE" --ks-type PKCS12 --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass env:STORE_PASSWORD --key-pass env:STORE_PASSWORD --out "$SIGNED_APK" "$UNSIGNED_APK"
+          "$APK_SIGNER" verify --verbose --print-certs "$SIGNED_APK"
+          echo "SIGNED_APK=$SIGNED_APK" >> "$GITHUB_ENV"
+          echo "APP_VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Publish signed APK to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="pooshe-v${APP_VERSION}-signed-release"
+          test -s "$SIGNED_APK"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$SIGNED_APK" --clobber
+          else
+            gh release create "$TAG" "$SIGNED_APK" --target "$GITHUB_SHA" \
+              --title "Pooshe ${APP_VERSION} - Signed Android Release APK" \
+              --notes "Signed Android Release APK. Signature verified with apksigner in GitHub Actions."
+          fi
+          echo "## Signed APK published" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Version: ${APP_VERSION}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Release tag: $TAG" >> "$GITHUB_STEP_SUMMARY"
+          sha256sum "$SIGNED_APK" | tee -a "$GITHUB_STEP_SUMMARY"
